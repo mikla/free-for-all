@@ -1,4 +1,4 @@
-import { DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
+import { DirectionsService } from '@react-google-maps/api';
 
 interface LatLng {
   lat: number;
@@ -11,36 +11,24 @@ export const snapToStreet = async (
   directionsService: google.maps.DirectionsService
 ): Promise<LatLng> => {
   try {
-    // Create a small offset to force the directions service to find a route
-    const offset = 0.0001; // approximately 10 meters
-    const destination = {
-      lat: position.lat + offset,
-      lng: position.lng + offset
-    };
-
     const result = await directionsService.route({
       origin: position,
-      destination: destination,
-      travelMode: google.maps.TravelMode.DRIVING
+      destination: position,
+      travelMode: google.maps.TravelMode.DRIVING,
     });
 
-    // Get the first point of the route
-    const route = result.routes[0];
-    if (route && route.legs[0] && route.legs[0].steps[0]) {
-      const path = route.legs[0].steps[0].path;
-      if (path && path.length > 0) {
-        return {
-          lat: path[0].lat(),
-          lng: path[0].lng()
-        };
-      }
+    if (result.routes.length > 0 && result.routes[0].legs.length > 0) {
+      const snappedPoint = result.routes[0].legs[0].start_location;
+      return {
+        lat: snappedPoint.lat(),
+        lng: snappedPoint.lng()
+      };
     }
+    return position;
   } catch (error) {
     console.error('Error snapping to street:', error);
+    return position;
   }
-  
-  // Return original position if snapping fails
-  return position;
 };
 
 // Function to check if a position is on a street
@@ -52,11 +40,12 @@ export const isOnStreet = async (
     const result = await directionsService.route({
       origin: position,
       destination: position,
-      travelMode: google.maps.TravelMode.DRIVING
+      travelMode: google.maps.TravelMode.DRIVING,
     });
 
     return result.routes.length > 0;
   } catch (error) {
+    console.error('Error checking if on street:', error);
     return false;
   }
 };
@@ -66,29 +55,41 @@ export const getValidMovementPositions = async (
   currentPosition: LatLng,
   directionsService: google.maps.DirectionsService
 ): Promise<LatLng[]> => {
-  const directions = [
-    { lat: 0.0001, lng: 0 },      // North
-    { lat: 0.0001, lng: 0.0001 }, // Northeast
-    { lat: 0, lng: 0.0001 },      // East
-    { lat: -0.0001, lng: 0.0001 },// Southeast
-    { lat: -0.0001, lng: 0 },     // South
-    { lat: -0.0001, lng: -0.0001 },// Southwest
-    { lat: 0, lng: -0.0001 },     // West
-    { lat: 0.0001, lng: -0.0001 } // Northwest
-  ];
+  try {
+    // Create a small grid of potential positions around the current position
+    const gridSize = 0.0001; // approximately 10 meters
+    const positions: LatLng[] = [];
 
-  const validPositions: LatLng[] = [];
+    // Check positions in all 8 directions
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        if (i === 0 && j === 0) continue; // Skip current position
 
-  for (const direction of directions) {
-    const newPosition = {
-      lat: currentPosition.lat + direction.lat,
-      lng: currentPosition.lng + direction.lng
-    };
+        const testPosition = {
+          lat: currentPosition.lat + i * gridSize,
+          lng: currentPosition.lng + j * gridSize
+        };
 
-    if (await isOnStreet(newPosition, directionsService)) {
-      validPositions.push(newPosition);
+        // Check if this position is on a street
+        const result = await directionsService.route({
+          origin: testPosition,
+          destination: testPosition,
+          travelMode: google.maps.TravelMode.DRIVING,
+        });
+
+        if (result.routes.length > 0) {
+          const snappedPoint = result.routes[0].legs[0].start_location;
+          positions.push({
+            lat: snappedPoint.lat(),
+            lng: snappedPoint.lng()
+          });
+        }
+      }
     }
-  }
 
-  return validPositions;
+    return positions;
+  } catch (error) {
+    console.error('Error getting valid movement positions:', error);
+    return [];
+  }
 }; 

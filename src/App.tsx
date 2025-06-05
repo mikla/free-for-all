@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { GoogleMap, LoadScript, Marker, DirectionsService } from '@react-google-maps/api';
+import React, { useState, useCallback, useEffect } from 'react';
+import { GoogleMap, LoadScript, Marker, DirectionsService, Circle } from '@react-google-maps/api';
 import styled from 'styled-components';
 import { useMultiplayer } from './hooks/useMultiplayer';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
@@ -26,6 +26,19 @@ const App: React.FC = () => {
   const { players, currentPlayer } = useMultiplayer();
   const { isMoving } = usePlayerMovement(directionsService);
 
+  // Always center the map on the current player
+  useEffect(() => {
+    if (map && currentPlayer) {
+      map.panTo(currentPlayer.position);
+    }
+  }, [map, currentPlayer]);
+
+  useEffect(() => {
+    if (currentPlayer) {
+      console.log('currentPlayer.position changed:', currentPlayer.position);
+    }
+  }, [currentPlayer?.position]);
+
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
   }, []);
@@ -41,6 +54,19 @@ const App: React.FC = () => {
   const onGoogleMapsLoad = useCallback(() => {
     setIsGoogleMapsLoaded(true);
   }, []);
+
+  if (currentPlayer) {
+    console.log('Rendering currentPlayer marker at:', currentPlayer.position);
+    const myPlayer = players.get(currentPlayer.id);
+    console.log('Player entry in players map:', myPlayer);
+    console.log('All players:', Array.from(players.entries()));
+    console.log('Current player:', currentPlayer);
+    console.log('Current player ID:', currentPlayer.id);
+    console.log('Is current player in players map?', players.has(currentPlayer.id));
+    console.log('Players map size:', players.size);
+  } else {
+    console.log('No current player available');
+  }
 
   return (
     <LoadScript 
@@ -70,20 +96,47 @@ const App: React.FC = () => {
                   }
                 }}
               />
-              
-              {/* Render all players */}
-              {Array.from(players.values()).map((player) => (
-                <Marker
-                  key={player.id}
-                  position={player.position}
-                  title={`Player ${player.id}`}
-                  icon={{
-                    url: player.id === currentPlayer?.id 
-                      ? 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                      : 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                    scaledSize: new google.maps.Size(32, 32)
-                  }}
-                />
+              {/* Debug: Render a simple marker at defaultCenter */}
+              <Marker position={defaultCenter} />
+              {/* Render current player marker and a large circle */}
+              {currentPlayer && (
+                <>
+                  <Marker
+                    key={currentPlayer.id}
+                    position={currentPlayer.position}
+                    title={'You'}
+                    label={{ text: 'You', color: 'white', fontWeight: 'bold' }}
+                    icon={{
+                      url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                      scaledSize: new google.maps.Size(32, 32)
+                    }}
+                  />
+                  <Circle
+                    center={currentPlayer.position}
+                    radius={30}
+                    options={{
+                      fillColor: '#0000FF',
+                      fillOpacity: 0.3,
+                      strokeColor: '#0000FF',
+                      strokeOpacity: 0.8,
+                      strokeWeight: 2,
+                    }}
+                  />
+                </>
+              )}
+              {/* Render other players */}
+              {Array.from(players.values())
+                .filter(player => player.id !== currentPlayer?.id)
+                .map((player) => (
+                  <Marker
+                    key={player.id}
+                    position={player.position}
+                    title={`Player ${player.id}`}
+                    icon={{
+                      url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                      scaledSize: new google.maps.Size(32, 32)
+                    }}
+                  />
               ))}
             </>
           )}

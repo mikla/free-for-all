@@ -16,36 +16,67 @@ export const useMultiplayer = () => {
   useEffect(() => {
     const socket = socketService.connect();
 
-    if (!socket) return;
+    if (!socket) {
+      console.error('Failed to connect socket');
+      return;
+    }
 
-    // Handle initial connection
-    socket.on('init', (data: Player) => {
-      console.log('Player initialized:', data.id);
-      setCurrentPlayer(data);
-      setPlayers(prev => new Map(prev).set(data.id, data));
+    console.log('Socket connected, ID:', socket.id);
+
+    // Set current player when socket connects
+    socket.on('connect', () => {
+      console.log('Socket connected event received, ID:', socket.id);
     });
 
     // Handle existing players
     socket.on('existingPlayers', (existingPlayers: Player[]) => {
-      console.log('Received existing players:', existingPlayers.length);
-      setPlayers(prev => {
-        const newPlayers = new Map(prev);
-        existingPlayers.forEach(player => {
-          newPlayers.set(player.id, player);
-        });
-        return newPlayers;
+      console.log('Received existing players:', existingPlayers);
+      const newPlayers = new Map();
+      existingPlayers.forEach(player => {
+        console.log('Processing player:', player);
+        newPlayers.set(player.id, player);
+        // If this is the current player, set it
+        if (player.id === socket.id) {
+          console.log('Found current player:', player);
+          setCurrentPlayer(player);
+        }
       });
+      console.log('Setting players map:', Array.from(newPlayers.entries()));
+      setPlayers(newPlayers);
     });
 
     // Handle new players joining
     socket.on('playerJoined', (player: Player) => {
-      console.log('New player joined:', player.id);
-      setPlayers(prev => new Map(prev).set(player.id, player));
+      console.log('New player joined:', player);
+      setPlayers(prev => {
+        const newPlayers = new Map(prev);
+        newPlayers.set(player.id, player);
+        console.log('Updated players after join:', Array.from(newPlayers.entries()));
+        return newPlayers;
+      });
     });
 
     // Handle player movement
-    socket.on('playerMoved', (data: Player) => {
-      setPlayers(prev => new Map(prev).set(data.id, data));
+    socket.on('playerMoved', (data: { id: string; position: { lat: number; lng: number } }) => {
+      console.log('Player moved:', data);
+      setPlayers(prev => {
+        const newPlayers = new Map(prev);
+        const player = newPlayers.get(data.id);
+        if (player) {
+          newPlayers.set(data.id, { ...player, position: data.position });
+          console.log('Updated players after move:', Array.from(newPlayers.entries()));
+        }
+        return newPlayers;
+      });
+      
+      // Also update currentPlayer if this is the current player's movement
+      setCurrentPlayer(prev => {
+        if (prev && prev.id === data.id) {
+          console.log('Updating currentPlayer position from server:', data.position);
+          return { ...prev, position: data.position };
+        }
+        return prev;
+      });
     });
 
     // Handle player disconnection
@@ -54,13 +85,14 @@ export const useMultiplayer = () => {
       setPlayers(prev => {
         const newPlayers = new Map(prev);
         newPlayers.delete(playerId);
-        console.log('Remaining players:', newPlayers.size);
+        console.log('Remaining players:', Array.from(newPlayers.entries()));
         return newPlayers;
       });
     });
 
     return () => {
-      socket.off('init');
+      console.log('Cleaning up socket listeners');
+      socket.off('connect');
       socket.off('existingPlayers');
       socket.off('playerJoined');
       socket.off('playerMoved');
@@ -69,11 +101,32 @@ export const useMultiplayer = () => {
   }, []);
 
   const updatePosition = (position: { lat: number; lng: number }) => {
-    const socket = socketService.getSocket();
-    if (socket) {
-      socket.emit('updatePosition', position);
-    }
+    console.log('updatePosition called with:', position);
+    setCurrentPlayer(prev => {
+      const socket = socketService.getSocket();
+      if (socket && prev) {
+        socket.emit('updatePosition', position);
+        // Update current player position immediately for better responsiveness
+        const updated = { ...prev, position };
+        // Also update the players map for the current player
+        setPlayers(playersPrev => {
+          const newPlayers = new Map(playersPrev);
+          newPlayers.set(updated.id, updated);
+          return newPlayers;
+        });
+        return updated;
+      } else {
+        console.log('Cannot update position - socket or currentPlayer missing:', { socket: !!socket, currentPlayer: !!prev });
+        return prev;
+      }
+    });
   };
+
+  console.log('Current state:', { 
+    currentPlayer, 
+    playersCount: players.size,
+    players: Array.from(players.entries())
+  });
 
   return {
     players,
