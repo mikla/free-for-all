@@ -68,16 +68,43 @@ ssh -i ~/.ssh/id_do root@$DROPLET_IP << EOF
             sh get-docker.sh
             systemctl start docker
             systemctl enable docker
-            apt install docker-compose -y
+            
+            # Install newer Docker Compose (v2) instead of apt version
+            echo "🔧 Installing Docker Compose v2..."
+            curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            
+            # Create symlink for docker compose command
+            ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
         fi
         
-        # Start backend
-        docker-compose up -d --build
+        # Start backend with error handling
+        echo "🐳 Starting Docker containers..."
+        docker-compose --version
+        docker --version
+        
+        # Clean up any orphaned containers
+        docker-compose down --remove-orphans 2>/dev/null || true
+        
+        # Build and start
+        docker-compose up -d --build --force-recreate
+        
+        # Check if containers are running
+        sleep 5
+        docker-compose ps
+        
     else
         echo "📡 Backend already running, updating..."
         cd /root/game-deployment
         git pull
-        docker-compose up -d --build
+        
+        # Stop, update, and restart with fresh containers
+        docker-compose down --remove-orphans 2>/dev/null || true
+        docker-compose up -d --build --force-recreate
+        
+        # Check status
+        sleep 5
+        docker-compose ps
     fi
 EOF
 
