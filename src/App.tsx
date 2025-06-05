@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { useMultiplayer } from './hooks/useMultiplayer';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
 import { useFightMode } from './hooks/useFightMode';
-import { Character } from './utils/characterUtils';
+
 
 const MapContainer = styled.div`
   width: 100vw;
@@ -145,7 +145,7 @@ const mapContainerStyle = {
 };
 
 // Function to create character marker icon
-const createCharacterMarkerIcon = (character: Character, size: number = 40, isCurrentPlayer: boolean = false): google.maps.Icon => {
+const createCharacterMarkerIcon = (character: any, size: number = 40, isCurrentPlayer: boolean = false): google.maps.Icon => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   
@@ -166,7 +166,7 @@ const createCharacterMarkerIcon = (character: Character, size: number = 40, isCu
   ctx.fill();
   
   // Draw border
-  ctx.strokeStyle = isCurrentPlayer ? '#ffffff' : '#ffffff';
+  ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 3;
   ctx.stroke();
   

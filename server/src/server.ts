@@ -99,6 +99,77 @@ const characters = [
     emoji: '😈',
     color: '#9C27B0',
     description: 'Specialized in demon slaying'
+  },
+  // South Park Characters with Absurd Emojis
+  {
+    id: 'cartman',
+    name: 'Eric Cartman',
+    emoji: '🍔',
+    color: '#FF6B35',
+    description: 'Respects his authoritah!'
+  },
+  {
+    id: 'kenny',
+    name: 'Kenny McCormick',
+    emoji: '💀',
+    color: '#FFA500',
+    description: 'Oh my God, they killed Kenny!'
+  },
+  {
+    id: 'stan',
+    name: 'Stan Marsh',
+    emoji: '🤮',
+    color: '#4169E1',
+    description: 'This is pretty f***ed up right here'
+  },
+  {
+    id: 'kyle',
+    name: 'Kyle Broflovski',
+    emoji: '🧠',
+    color: '#228B22',
+    description: 'You bastards!'
+  },
+  {
+    id: 'butters',
+    name: 'Butters Stotch',
+    emoji: '🌻',
+    color: '#FFD700',
+    description: 'Oh hamburgers!'
+  },
+  {
+    id: 'randy',
+    name: 'Randy Marsh',
+    emoji: '🍺',
+    color: '#8B4513',
+    description: 'I thought this was America!'
+  },
+  {
+    id: 'chef',
+    name: 'Chef',
+    emoji: '🎵',
+    color: '#8B0000',
+    description: 'Hello there children!'
+  },
+  {
+    id: 'towelie',
+    name: 'Towelie',
+    emoji: '🌿',
+    color: '#90EE90',
+    description: "Don't forget to bring a towel!"
+  },
+  {
+    id: 'underpants_gnomes',
+    name: 'Underpants Gnomes',
+    emoji: '👙',
+    color: '#9370DB',
+    description: 'Phase 1: Collect underpants'
+  },
+  {
+    id: 'mr_hankey',
+    name: 'Mr. Hankey',
+    emoji: '💩',
+    color: '#8B4513',
+    description: 'Howdy ho!'
   }
 ];
 
