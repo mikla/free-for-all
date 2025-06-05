@@ -3,10 +3,67 @@ import { GoogleMap, LoadScript, Marker, DirectionsService, Circle } from '@react
 import styled from 'styled-components';
 import { useMultiplayer } from './hooks/useMultiplayer';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
+import { useFightMode } from './hooks/useFightMode';
 
 const MapContainer = styled.div`
   width: 100vw;
   height: 100vh;
+  position: relative;
+`;
+
+const FightModeIndicator = styled.div<{ isInFightMode: boolean }>`
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: ${props => props.isInFightMode ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.7)'};
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  z-index: 1000;
+  font-weight: bold;
+  border: 2px solid ${props => props.isInFightMode ? '#ff0000' : '#333'};
+`;
+
+const HealthBar = styled.div`
+  position: absolute;
+  top: 70px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
+`;
+
+const HealthBarFill = styled.div<{ health: number }>`
+  width: ${props => props.health}%;
+  height: 20px;
+  background: ${props => 
+    props.health > 50 ? '#4CAF50' : 
+    props.health > 25 ? '#FF9800' : '#F44336'
+  };
+  border-radius: 3px;
+  transition: width 0.3s ease;
+`;
+
+const HealthBarContainer = styled.div`
+  width: 200px;
+  height: 20px;
+  background: #333;
+  border-radius: 3px;
+  margin-top: 5px;
+`;
+
+const Instructions = styled.div`
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
+  font-size: 14px;
 `;
 
 const defaultCenter = {
@@ -25,6 +82,7 @@ const App: React.FC = () => {
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const { players, currentPlayer } = useMultiplayer();
   const { isMoving } = usePlayerMovement(directionsService);
+  const { isInFightMode, nearbyPlayers, canShoot } = useFightMode();
 
   // Always center the map on the current player
   useEffect(() => {
@@ -141,6 +199,28 @@ const App: React.FC = () => {
             </>
           )}
         </GoogleMap>
+        <FightModeIndicator isInFightMode={isInFightMode}>
+          {isInFightMode ? 'FIGHT MODE' : 'Normal Mode'}
+        </FightModeIndicator>
+        
+        {currentPlayer && (
+          <HealthBar>
+            Health: {currentPlayer.health}/100
+            <HealthBarContainer>
+              <HealthBarFill health={currentPlayer.health} />
+            </HealthBarContainer>
+          </HealthBar>
+        )}
+        
+        <Instructions>
+          <div>WASD or Arrow Keys: Move</div>
+          {isInFightMode && <div>SPACE: Shoot (when enemies nearby)</div>}
+          {nearbyPlayers.length > 0 && (
+            <div style={{ color: '#ff4444' }}>
+              Enemies in range: {nearbyPlayers.length}
+            </div>
+          )}
+        </Instructions>
       </MapContainer>
     </LoadScript>
   );

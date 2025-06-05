@@ -7,6 +7,7 @@ interface Player {
     lat: number;
     lng: number;
   };
+  health: number;
 }
 
 export const useMultiplayer = () => {
@@ -90,6 +91,32 @@ export const useMultiplayer = () => {
       });
     });
 
+    // Handle player being shot
+    socket.on('playerShot', (data: { shooterId: string; targetId: string; damage: number }) => {
+      console.log('Player shot event:', data);
+      // Update target player's health
+      setPlayers(prev => {
+        const newPlayers = new Map(prev);
+        const targetPlayer = newPlayers.get(data.targetId);
+        if (targetPlayer) {
+          const updatedPlayer = { ...targetPlayer, health: Math.max(0, targetPlayer.health - data.damage) };
+          newPlayers.set(data.targetId, updatedPlayer);
+          console.log(`Player ${data.targetId} health: ${updatedPlayer.health}`);
+        }
+        return newPlayers;
+      });
+
+      // Update currentPlayer health if we're the target
+      setCurrentPlayer(prev => {
+        if (prev && prev.id === data.targetId) {
+          const newHealth = Math.max(0, prev.health - data.damage);
+          console.log(`Your health: ${newHealth}`);
+          return { ...prev, health: newHealth };
+        }
+        return prev;
+      });
+    });
+
     return () => {
       console.log('Cleaning up socket listeners');
       socket.off('connect');
@@ -97,6 +124,7 @@ export const useMultiplayer = () => {
       socket.off('playerJoined');
       socket.off('playerMoved');
       socket.off('playerLeft');
+      socket.off('playerShot');
     };
   }, []);
 
@@ -122,6 +150,14 @@ export const useMultiplayer = () => {
     });
   };
 
+  const shoot = (targetId: string) => {
+    const socket = socketService.getSocket();
+    if (socket && currentPlayer) {
+      console.log(`Shooting at player ${targetId}`);
+      socket.emit('shoot', { targetId });
+    }
+  };
+
   console.log('Current state:', { 
     currentPlayer, 
     playersCount: players.size,
@@ -131,6 +167,7 @@ export const useMultiplayer = () => {
   return {
     players,
     currentPlayer,
-    updatePosition
+    updatePosition,
+    shoot
   };
 }; 
