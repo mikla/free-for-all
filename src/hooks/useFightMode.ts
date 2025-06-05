@@ -9,8 +9,8 @@ export const useFightMode = () => {
 
   // Update nearby players when player positions change
   useEffect(() => {
-    if (currentPlayer) {
-      const allPlayers = Array.from(players.values()).filter(p => p.id !== currentPlayer.id);
+    if (currentPlayer && !currentPlayer.isDead) {
+      const allPlayers = Array.from(players.values()).filter(p => p.id !== currentPlayer.id && !p.isDead);
       const playersInRange = getPlayersInRange(currentPlayer.position, allPlayers);
       setNearbyPlayers(playersInRange);
       setIsInFightMode(playersInRange.length > 0);
@@ -18,13 +18,16 @@ export const useFightMode = () => {
       if (playersInRange.length > 0) {
         console.log(`Fight mode: ${playersInRange.length} players in range`);
       }
+    } else {
+      setNearbyPlayers([]);
+      setIsInFightMode(false);
     }
   }, [currentPlayer, players]);
 
   // Handle space key for shooting
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Space' && isInFightMode && nearbyPlayers.length > 0) {
+      if (event.code === 'Space' && isInFightMode && nearbyPlayers.length > 0 && currentPlayer && !currentPlayer.isDead) {
         event.preventDefault();
         // Shoot at the closest player
         const closestPlayer = nearbyPlayers[0]; // For now, just shoot the first one
@@ -39,11 +42,11 @@ export const useFightMode = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isInFightMode, nearbyPlayers, shoot]);
+  }, [isInFightMode, nearbyPlayers, shoot, currentPlayer]);
 
   return {
     isInFightMode,
     nearbyPlayers,
-    canShoot: isInFightMode && nearbyPlayers.some(p => p.health > 0)
+    canShoot: isInFightMode && nearbyPlayers.some(p => p.health > 0) && currentPlayer && !currentPlayer.isDead
   };
 }; 

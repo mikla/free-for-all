@@ -14,18 +14,18 @@ const io = new Server(httpServer, {
   }
 });
 
-// Predefined street locations in London
+// Predefined street locations in London - clustered around Trafalgar Square for testing
 const streetLocations = [
-  { lat: 51.5074, lng: -0.1278 }, // Trafalgar Square
-  { lat: 51.5014, lng: -0.1419 }, // Westminster
-  { lat: 51.5123, lng: -0.0909 }, // Liverpool Street
-  { lat: 51.5154, lng: -0.0725 }, // Old Street
-  { lat: 51.5200, lng: -0.1000 }, // Kings Cross
-  { lat: 51.5080, lng: -0.1281 }, // Charing Cross
-  { lat: 51.5079, lng: -0.1247 }, // Covent Garden
-  { lat: 51.5113, lng: -0.1190 }, // Holborn
-  { lat: 51.5139, lng: -0.0989 }, // Farringdon
-  { lat: 51.5175, lng: -0.1400 }  // Euston
+  { lat: 51.5084, lng: -0.1278 }, // Trafalgar Square (center)
+  { lat: 51.5082, lng: -0.1275 }, // 30m northeast of Trafalgar Square
+  { lat: 51.5086, lng: -0.1281 }, // 30m northwest of Trafalgar Square  
+  { lat: 51.5081, lng: -0.1282 }, // 30m southwest of Trafalgar Square
+  { lat: 51.5087, lng: -0.1275 }, // 30m southeast of Trafalgar Square
+  { lat: 51.5083, lng: -0.1270 }, // 40m east of Trafalgar Square
+  { lat: 51.5085, lng: -0.1285 }, // 40m west of Trafalgar Square
+  { lat: 51.5079, lng: -0.1278 }, // 40m south of Trafalgar Square
+  { lat: 51.5089, lng: -0.1278 }, // 40m north of Trafalgar Square
+  { lat: 51.5080, lng: -0.1270 }  // 45m southeast of Trafalgar Square
 ];
 
 const players = new Map();
@@ -38,7 +38,9 @@ io.on('connection', (socket) => {
   const player = {
     id: socket.id,
     position: randomLocation,
-    health: 100
+    health: 100,
+    kills: 0,
+    isDead: false
   };
   
   players.set(socket.id, player);
@@ -62,7 +64,7 @@ io.on('connection', (socket) => {
     const shooter = players.get(socket.id);
     const target = players.get(data.targetId);
     
-    if (shooter && target && target.health > 0) {
+    if (shooter && target && target.health > 0 && !shooter.isDead && !target.isDead) {
       // Calculate distance between shooter and target
       const distance = calculateDistance(shooter.position, target.position);
       const maxRange = 50; // 50 meters max shooting range
@@ -82,12 +84,37 @@ io.on('connection', (socket) => {
         
         // Check if target died
         if (target.health <= 0) {
-          console.log(`Player ${data.targetId} has been eliminated!`);
-          io.emit('playerEliminated', { playerId: data.targetId });
+          target.isDead = true;
+          shooter.kills += 1;
+          
+          console.log(`Player ${data.targetId} has been eliminated by ${socket.id}! Killer now has ${shooter.kills} kills.`);
+          
+          io.emit('playerEliminated', { 
+            playerId: data.targetId, 
+            killerId: socket.id 
+          });
         }
       } else {
         console.log(`Shot from ${socket.id} to ${data.targetId} failed: too far (${distance.toFixed(1)}m)`);
       }
+    }
+  });
+  
+  socket.on('respawn', () => {
+    const player = players.get(socket.id);
+    if (player && player.isDead) {
+      // Respawn at random location
+      const randomLocation = streetLocations[Math.floor(Math.random() * streetLocations.length)];
+      player.position = randomLocation;
+      player.health = 100;
+      player.isDead = false;
+      
+      console.log(`Player ${socket.id} respawned at`, randomLocation);
+      
+      io.emit('playerRespawned', {
+        playerId: socket.id,
+        position: randomLocation
+      });
     }
   });
   

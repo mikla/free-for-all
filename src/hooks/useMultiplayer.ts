@@ -8,6 +8,8 @@ interface Player {
     lng: number;
   };
   health: number;
+  kills: number;
+  isDead: boolean;
 }
 
 export const useMultiplayer = () => {
@@ -117,6 +119,69 @@ export const useMultiplayer = () => {
       });
     });
 
+    // Handle player elimination/death
+    socket.on('playerEliminated', (data: { playerId: string; killerId: string }) => {
+      console.log('Player eliminated:', data);
+      
+      // Update killed player's state
+      setPlayers(prev => {
+        const newPlayers = new Map(prev);
+        const killedPlayer = newPlayers.get(data.playerId);
+        const killer = newPlayers.get(data.killerId);
+        
+        if (killedPlayer) {
+          newPlayers.set(data.playerId, { ...killedPlayer, isDead: true, health: 0 });
+        }
+        
+        if (killer) {
+          newPlayers.set(data.killerId, { ...killer, kills: killer.kills + 1 });
+        }
+        
+        return newPlayers;
+      });
+
+      // Update currentPlayer if we're involved
+      setCurrentPlayer(prev => {
+        if (prev) {
+          if (prev.id === data.playerId) {
+            return { ...prev, isDead: true, health: 0 };
+          } else if (prev.id === data.killerId) {
+            return { ...prev, kills: prev.kills + 1 };
+          }
+        }
+        return prev;
+      });
+    });
+
+    // Handle player respawn
+    socket.on('playerRespawned', (data: { playerId: string; position: { lat: number; lng: number } }) => {
+      console.log('Player respawned:', data);
+      
+      setPlayers(prev => {
+        const newPlayers = new Map(prev);
+        const respawnedPlayer = newPlayers.get(data.playerId);
+        
+        if (respawnedPlayer) {
+          newPlayers.set(data.playerId, { 
+            ...respawnedPlayer, 
+            isDead: false, 
+            health: 100, 
+            position: data.position 
+          });
+        }
+        
+        return newPlayers;
+      });
+
+      // Update currentPlayer if we respawned
+      setCurrentPlayer(prev => {
+        if (prev && prev.id === data.playerId) {
+          return { ...prev, isDead: false, health: 100, position: data.position };
+        }
+        return prev;
+      });
+    });
+
     return () => {
       console.log('Cleaning up socket listeners');
       socket.off('connect');
@@ -125,6 +190,8 @@ export const useMultiplayer = () => {
       socket.off('playerMoved');
       socket.off('playerLeft');
       socket.off('playerShot');
+      socket.off('playerEliminated');
+      socket.off('playerRespawned');
     };
   }, []);
 
@@ -158,6 +225,14 @@ export const useMultiplayer = () => {
     }
   };
 
+  const respawn = () => {
+    const socket = socketService.getSocket();
+    if (socket && currentPlayer && currentPlayer.isDead) {
+      console.log('Requesting respawn');
+      socket.emit('respawn');
+    }
+  };
+
   console.log('Current state:', { 
     currentPlayer, 
     playersCount: players.size,
@@ -168,6 +243,7 @@ export const useMultiplayer = () => {
     players,
     currentPlayer,
     updatePosition,
-    shoot
+    shoot,
+    respawn
   };
 }; 

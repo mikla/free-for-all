@@ -66,6 +66,55 @@ const Instructions = styled.div`
   font-size: 14px;
 `;
 
+const DeathOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  color: white;
+`;
+
+const DeathMessage = styled.h1`
+  color: #ff4444;
+  font-size: 48px;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+`;
+
+const RespawnButton = styled.button`
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 20px;
+  
+  &:hover {
+    background: #45a049;
+  }
+`;
+
+const KillCounter = styled.div`
+  position: absolute;
+  top: 120px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
+  font-weight: bold;
+`;
+
 const defaultCenter = {
   lat: 51.5074, // London coordinates as default
   lng: -0.1278
@@ -80,7 +129,7 @@ const App: React.FC = () => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
-  const { players, currentPlayer } = useMultiplayer();
+  const { players, currentPlayer, respawn } = useMultiplayer();
   const { isMoving } = usePlayerMovement(directionsService);
   const { isInFightMode, nearbyPlayers, canShoot } = useFightMode();
 
@@ -157,7 +206,7 @@ const App: React.FC = () => {
               {/* Debug: Render a simple marker at defaultCenter */}
               <Marker position={defaultCenter} />
               {/* Render current player marker and a large circle */}
-              {currentPlayer && (
+              {currentPlayer && !currentPlayer.isDead && (
                 <>
                   <Marker
                     key={currentPlayer.id}
@@ -184,12 +233,12 @@ const App: React.FC = () => {
               )}
               {/* Render other players */}
               {Array.from(players.values())
-                .filter(player => player.id !== currentPlayer?.id)
+                .filter(player => player.id !== currentPlayer?.id && !player.isDead)
                 .map((player) => (
                   <Marker
                     key={player.id}
                     position={player.position}
-                    title={`Player ${player.id}`}
+                    title={`Player ${player.id} (${player.health} HP, ${player.kills} kills)`}
                     icon={{
                       url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
                       scaledSize: new google.maps.Size(32, 32)
@@ -204,23 +253,45 @@ const App: React.FC = () => {
         </FightModeIndicator>
         
         {currentPlayer && (
-          <HealthBar>
-            Health: {currentPlayer.health}/100
-            <HealthBarContainer>
-              <HealthBarFill health={currentPlayer.health} />
-            </HealthBarContainer>
-          </HealthBar>
+          <>
+            <HealthBar>
+              Health: {currentPlayer.health}/100
+              <HealthBarContainer>
+                <HealthBarFill health={currentPlayer.health} />
+              </HealthBarContainer>
+            </HealthBar>
+            
+            <KillCounter>
+              Kills: {currentPlayer.kills}
+            </KillCounter>
+          </>
         )}
         
         <Instructions>
           <div>WASD or Arrow Keys: Move</div>
-          {isInFightMode && <div>SPACE: Shoot (when enemies nearby)</div>}
-          {nearbyPlayers.length > 0 && (
+          {isInFightMode && !currentPlayer?.isDead && <div>SPACE: Shoot (when enemies nearby)</div>}
+          {nearbyPlayers.length > 0 && !currentPlayer?.isDead && (
             <div style={{ color: '#ff4444' }}>
               Enemies in range: {nearbyPlayers.length}
             </div>
           )}
         </Instructions>
+
+        {/* Death Overlay */}
+        {currentPlayer?.isDead && (
+          <DeathOverlay>
+            <DeathMessage>YOU ARE DEAD</DeathMessage>
+            <div style={{ fontSize: '24px', marginBottom: '10px' }}>
+              You were eliminated!
+            </div>
+            <div style={{ fontSize: '18px', marginBottom: '10px' }}>
+              Final Score: {currentPlayer.kills} kills
+            </div>
+            <RespawnButton onClick={respawn}>
+              RESPAWN
+            </RespawnButton>
+          </DeathOverlay>
+        )}
       </MapContainer>
     </LoadScript>
   );
