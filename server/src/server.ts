@@ -28,6 +28,85 @@ const streetLocations = [
   { lat: 51.5080, lng: -0.1270 }  // 45m southeast of Trafalgar Square
 ];
 
+// Doom-inspired characters
+const characters = [
+  {
+    id: 'marine',
+    name: 'Space Marine',
+    emoji: '🪖',
+    color: '#4CAF50',
+    description: 'Tough as nails marine'
+  },
+  {
+    id: 'scout',
+    name: 'Scout',
+    emoji: '🏃',
+    color: '#2196F3',
+    description: 'Fast and agile'
+  },
+  {
+    id: 'heavy',
+    name: 'Heavy Gunner',
+    emoji: '💪',
+    color: '#FF5722',
+    description: 'Strong and powerful'
+  },
+  {
+    id: 'sniper',
+    name: 'Sniper',
+    emoji: '🎯',
+    color: '#9C27B0',
+    description: 'Precise and deadly'
+  },
+  {
+    id: 'medic',
+    name: 'Combat Medic',
+    emoji: '⚕️',
+    color: '#4CAF50',
+    description: 'Heals and fights'
+  },
+  {
+    id: 'engineer',
+    name: 'Engineer',
+    emoji: '🔧',
+    color: '#FF9800',
+    description: 'Builds and repairs'
+  },
+  {
+    id: 'assassin',
+    name: 'Assassin',
+    emoji: '🥷',
+    color: '#424242',
+    description: 'Silent but deadly'
+  },
+  {
+    id: 'berserker',
+    name: 'Berserker',
+    emoji: '😤',
+    color: '#F44336',
+    description: 'Rage-fueled warrior'
+  },
+  {
+    id: 'cyborg',
+    name: 'Cyborg',
+    emoji: '🤖',
+    color: '#607D8B',
+    description: 'Half machine, all deadly'
+  },
+  {
+    id: 'demon_hunter',
+    name: 'Demon Hunter',
+    emoji: '😈',
+    color: '#9C27B0',
+    description: 'Specialized in demon slaying'
+  }
+];
+
+// Get random character
+function getRandomCharacter() {
+  return characters[Math.floor(Math.random() * characters.length)];
+}
+
 const players = new Map();
 
 io.on('connection', (socket) => {
@@ -35,13 +114,17 @@ io.on('connection', (socket) => {
   
   // Assign a random street location to the new player
   const randomLocation = streetLocations[Math.floor(Math.random() * streetLocations.length)];
+  const character = getRandomCharacter();
   const player = {
     id: socket.id,
     position: randomLocation,
     health: 100,
     kills: 0,
-    isDead: false
+    isDead: false,
+    character: character
   };
+  
+  console.log(`Player ${socket.id} assigned character: ${character.name} ${character.emoji}`);
   
   players.set(socket.id, player);
   console.log('Total players:', players.size);

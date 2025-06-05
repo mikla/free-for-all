@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useMultiplayer } from './hooks/useMultiplayer';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
 import { useFightMode } from './hooks/useFightMode';
+import { Character } from './utils/characterUtils';
 
 const MapContainer = styled.div`
   width: 100vw;
@@ -115,6 +116,24 @@ const KillCounter = styled.div`
   font-weight: bold;
 `;
 
+const CharacterInfo = styled.div`
+  position: absolute;
+  top: 160px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const CharacterEmoji = styled.span`
+  font-size: 24px;
+`;
+
 const defaultCenter = {
   lat: 51.5074, // London coordinates as default
   lng: -0.1278
@@ -123,6 +142,46 @@ const defaultCenter = {
 const mapContainerStyle = {
   width: '100%',
   height: '100%'
+};
+
+// Function to create character marker icon
+const createCharacterMarkerIcon = (character: Character, size: number = 40, isCurrentPlayer: boolean = false): google.maps.Icon => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  if (!ctx) {
+    return {
+      url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      scaledSize: new google.maps.Size(32, 32)
+    };
+  }
+  
+  canvas.width = size;
+  canvas.height = size;
+  
+  // Draw background circle
+  ctx.fillStyle = isCurrentPlayer ? '#2196F3' : character.color;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Draw border
+  ctx.strokeStyle = isCurrentPlayer ? '#ffffff' : '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  
+  // Draw character emoji
+  ctx.font = `${size * 0.5}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(character.emoji, size / 2, size / 2);
+  
+  return {
+    url: canvas.toDataURL(),
+    scaledSize: new google.maps.Size(size, size),
+    anchor: new google.maps.Point(size / 2, size / 2)
+  };
 };
 
 const App: React.FC = () => {
@@ -211,12 +270,8 @@ const App: React.FC = () => {
                   <Marker
                     key={currentPlayer.id}
                     position={currentPlayer.position}
-                    title={'You'}
-                    label={{ text: 'You', color: 'white', fontWeight: 'bold' }}
-                    icon={{
-                      url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-                      scaledSize: new google.maps.Size(32, 32)
-                    }}
+                    title={`You (${currentPlayer.character.name})`}
+                    icon={createCharacterMarkerIcon(currentPlayer.character, 40, true)}
                   />
                   <Circle
                     center={currentPlayer.position}
@@ -238,11 +293,8 @@ const App: React.FC = () => {
                   <Marker
                     key={player.id}
                     position={player.position}
-                    title={`Player ${player.id} (${player.health} HP, ${player.kills} kills)`}
-                    icon={{
-                      url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                      scaledSize: new google.maps.Size(32, 32)
-                    }}
+                    title={`${player.character.name} (${player.health} HP, ${player.kills} kills)`}
+                    icon={createCharacterMarkerIcon(player.character, 36, false)}
                   />
               ))}
             </>
@@ -264,6 +316,16 @@ const App: React.FC = () => {
             <KillCounter>
               Kills: {currentPlayer.kills}
             </KillCounter>
+            
+            <CharacterInfo>
+              <CharacterEmoji>{currentPlayer.character.emoji}</CharacterEmoji>
+              <div>
+                <div style={{ fontWeight: 'bold' }}>{currentPlayer.character.name}</div>
+                <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                  {currentPlayer.character.description}
+                </div>
+              </div>
+            </CharacterInfo>
           </>
         )}
         
