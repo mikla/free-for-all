@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import axios from 'axios';
 
 const app = express();
 app.use(cors());
@@ -14,8 +15,11 @@ const io = new Server(httpServer, {
   }
 });
 
-// Predefined street locations in London - clustered around Trafalgar Square for testing
-const streetLocations = [
+// Trust proxy to get real IP addresses (for when behind reverse proxy)
+app.set('trust proxy', true);
+
+// Fallback locations if IP geolocation fails (London area)
+const fallbackLocations = [
   { lat: 51.5084, lng: -0.1278 }, // Trafalgar Square (center)
   { lat: 51.5082, lng: -0.1275 }, // 30m northeast of Trafalgar Square
   { lat: 51.5086, lng: -0.1281 }, // 30m northwest of Trafalgar Square  
@@ -27,6 +31,74 @@ const streetLocations = [
   { lat: 51.5089, lng: -0.1278 }, // 40m north of Trafalgar Square
   { lat: 51.5080, lng: -0.1270 }  // 45m southeast of Trafalgar Square
 ];
+
+// Function to get location from IP address
+async function getLocationFromIP(ip: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    // Skip geolocation for localhost/private IPs
+    if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+      console.log(`Skipping geolocation for local IP: ${ip}`);
+      return null;
+    }
+
+    console.log(`Getting location for IP: ${ip}`);
+    
+    // Using ip-api.com (free, no API key required)
+    const response = await axios.get(`http://ip-api.com/json/${ip}`, {
+      timeout: 5000 // 5 second timeout
+    });
+
+    if (response.data.status === 'success') {
+      const { lat, lon: lng, city, country } = response.data;
+      console.log(`IP ${ip} located in: ${city}, ${country} (${lat}, ${lng})`);
+      
+      // Add some random offset (±0.01 degrees ≈ ±1km) to avoid exact same spawn points
+      const randomOffset = () => (Math.random() - 0.5) * 0.02;
+      
+      return {
+        lat: lat + randomOffset(),
+        lng: lng + randomOffset()
+      };
+    } else {
+      console.log(`IP geolocation failed for ${ip}:`, response.data.message);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error getting location for IP ${ip}:`, error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+// Function to get spawn location (IP-based or fallback)
+async function getSpawnLocation(socket: any): Promise<{ lat: number; lng: number }> {
+  // Get client IP address with multiple fallback methods
+  let clientIP = socket.handshake.headers['x-forwarded-for'] || 
+                 socket.handshake.headers['x-real-ip'] ||
+                 socket.handshake.address || 
+                 socket.request.connection.remoteAddress || 
+                 socket.request.socket.remoteAddress ||
+                 (socket.request.connection.socket ? socket.request.connection.socket.remoteAddress : null);
+
+  // If x-forwarded-for contains multiple IPs, take the first one
+  if (typeof clientIP === 'string' && clientIP.includes(',')) {
+    clientIP = clientIP.split(',')[0].trim();
+  }
+
+  console.log(`Client IP: ${clientIP} (Socket: ${socket.id})`);
+
+  // Try to get location from IP
+  if (clientIP) {
+    const ipLocation = await getLocationFromIP(clientIP);
+    
+    if (ipLocation) {
+      return ipLocation;
+    }
+  }
+
+  // Fallback to random London location
+  console.log(`Using fallback location for ${socket.id}`);
+  return fallbackLocations[Math.floor(Math.random() * fallbackLocations.length)];
+}
 
 // Doom-inspired characters
 const characters = [
@@ -180,21 +252,22 @@ function getRandomCharacter() {
 
 const players = new Map();
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('Player connected:', socket.id);
   
-  // Assign a random street location to the new player
-  const randomLocation = streetLocations[Math.floor(Math.random() * streetLocations.length)];
+  // Get spawn location based on IP (with fallback)
+  const spawnLocation = await getSpawnLocation(socket);
   const character = getRandomCharacter();
   const player = {
     id: socket.id,
-    position: randomLocation,
+    position: spawnLocation,
     health: 100,
     kills: 0,
     isDead: false,
     character: character
   };
   
+  console.log(`Player ${socket.id} spawned at: ${spawnLocation.lat}, ${spawnLocation.lng}`);
   console.log(`Player ${socket.id} assigned character: ${character.name} ${character.emoji}`);
   
   players.set(socket.id, player);
@@ -254,20 +327,20 @@ io.on('connection', (socket) => {
     }
   });
   
-  socket.on('respawn', () => {
+  socket.on('respawn', async () => {
     const player = players.get(socket.id);
     if (player && player.isDead) {
-      // Respawn at random location
-      const randomLocation = streetLocations[Math.floor(Math.random() * streetLocations.length)];
-      player.position = randomLocation;
+      // Respawn at location based on IP (with fallback)
+      const respawnLocation = await getSpawnLocation(socket);
+      player.position = respawnLocation;
       player.health = 100;
       player.isDead = false;
       
-      console.log(`Player ${socket.id} respawned at`, randomLocation);
+      console.log(`Player ${socket.id} respawned at`, respawnLocation);
       
       io.emit('playerRespawned', {
         playerId: socket.id,
-        position: randomLocation
+        position: respawnLocation
       });
     }
   });
