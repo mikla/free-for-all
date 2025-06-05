@@ -23,6 +23,9 @@ All notable changes to this project will be documented in this file.
 - Added multiplayer hook for player management
 - Updated App component to display all players on the map
 - Added detailed logging for player connections and disconnections
+- Added street-based movement system
+- Added keyboard controls (WASD/Arrow keys)
+- Added street snapping and validation
 
 ### Changed
 - Updated Node.js to v22.16.0 (LTS)
