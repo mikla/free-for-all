@@ -79,7 +79,7 @@ export const usePlayerMovement = (directionsService: google.maps.DirectionsServi
 
   // Handle continuous movement
   useEffect(() => {
-    let movementInterval: NodeJS.Timeout;
+    let movementInterval: ReturnType<typeof setInterval>;
 
     if (movementState.isMoving && movementState.direction) {
       movementInterval = setInterval(() => {

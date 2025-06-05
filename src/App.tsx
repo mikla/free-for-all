@@ -130,8 +130,8 @@ const App: React.FC = () => {
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const { players, currentPlayer, respawn } = useMultiplayer();
-  const { isMoving } = usePlayerMovement(directionsService);
-  const { isInFightMode, nearbyPlayers, canShoot } = useFightMode();
+  usePlayerMovement(directionsService);
+  const { isInFightMode, nearbyPlayers } = useFightMode();
 
   // Always center the map on the current player
   useEffect(() => {

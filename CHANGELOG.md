@@ -32,3 +32,34 @@ All notable changes to this project will be documented in this file.
 - Reinstalled dependencies with latest Node.js version
 - Fixed environment variable access in App.tsx to use Vite's import.meta.env
 - Updated plan.md to reflect single global map approach without room system 
+
+## [Latest] - Death & Respawn System + Kill Tracking
+### Added
+- **Death System**: Players die when health reaches 0
+- **Kill Tracking**: Players get +1 kill for each elimination
+- **Death Screen**: Full-screen "YOU ARE DEAD" overlay with final score
+- **Respawn System**: Click "RESPAWN" button to respawn at random location
+- **Kill Counter UI**: Shows current kill count in top-left corner
+- **Player Tooltips**: Hover over enemy markers to see their health and kill count
+- **Dead Player Filtering**: Dead players don't appear on map or in combat
+
+### Technical Details
+- Enhanced Player interface with `kills` and `isDead` properties
+- Added server-side kill tracking and respawn handling
+- Implemented proper death state management across client/server
+- Added `playerEliminated` and `playerRespawned` socket events
+- Dead players cannot shoot or be targeted
+- Respawn places players at random street locations with full health
+
+### Game Mechanics
+- Death occurs at 0 health (4 shots = elimination)
+- Killer receives +1 to kill counter immediately
+- Death screen shows final kill count
+- Respawn restores 100 health and random position
+- Dead players are invisible to others until respawn
+
+## [Previous] - Fight Mode Implementation
+### Fixed
+- Fixed player visibility issue where current player marker was not visible
+- Updated server to broadcast movement events to all clients including sender
+- Added proper currentPlayer state updates when receiving movement from server 

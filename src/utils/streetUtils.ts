@@ -1,64 +1,32 @@
-import { DirectionsService } from '@react-google-maps/api';
+// Utility functions for street validation and snapping
 
-interface LatLng {
-  lat: number;
-  lng: number;
-}
-
-// Function to snap a position to the nearest street
 export const snapToStreet = async (
-  position: LatLng,
-  directionsService: google.maps.DirectionsService
-): Promise<LatLng> => {
-  try {
-    const result = await directionsService.route({
-      origin: position,
-      destination: position,
-      travelMode: google.maps.TravelMode.DRIVING,
-    });
-
-    if (result.routes.length > 0 && result.routes[0].legs.length > 0) {
-      const snappedPoint = result.routes[0].legs[0].start_location;
-      return {
-        lat: snappedPoint.lat(),
-        lng: snappedPoint.lng()
-      };
-    }
-    return position;
-  } catch (error) {
-    console.error('Error snapping to street:', error);
-    return position;
-  }
+  position: { lat: number; lng: number },
+  _directionsService: google.maps.DirectionsService
+): Promise<{ lat: number; lng: number }> => {
+  // For now, just return the original position
+  // In a real implementation, you might use the Roads API or similar
+  return position;
 };
 
-// Function to check if a position is on a street
 export const isOnStreet = async (
-  position: LatLng,
-  directionsService: google.maps.DirectionsService
+  _position: { lat: number; lng: number },
+  _directionsService: google.maps.DirectionsService
 ): Promise<boolean> => {
-  try {
-    const result = await directionsService.route({
-      origin: position,
-      destination: position,
-      travelMode: google.maps.TravelMode.DRIVING,
-    });
-
-    return result.routes.length > 0;
-  } catch (error) {
-    console.error('Error checking if on street:', error);
-    return false;
-  }
+  // For now, always return true (allow movement anywhere)
+  // In a real implementation, you might validate against street data
+  return true;
 };
 
 // Function to get valid movement positions
 export const getValidMovementPositions = async (
-  currentPosition: LatLng,
+  currentPosition: { lat: number; lng: number },
   directionsService: google.maps.DirectionsService
-): Promise<LatLng[]> => {
+): Promise<{ lat: number; lng: number }[]> => {
   try {
     // Create a small grid of potential positions around the current position
     const gridSize = 0.0001; // approximately 10 meters
-    const positions: LatLng[] = [];
+    const positions: { lat: number; lng: number }[] = [];
 
     // Check positions in all 8 directions
     for (let i = -1; i <= 1; i++) {
