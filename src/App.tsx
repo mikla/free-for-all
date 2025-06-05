@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import styled from 'styled-components';
+import { useMultiplayer } from './hooks/useMultiplayer';
 
 const MapContainer = styled.div`
   width: 100vw;
@@ -19,7 +20,7 @@ const mapContainerStyle = {
 
 const App: React.FC = () => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [playerPosition, setPlayerPosition] = useState(defaultCenter);
+  const { players, currentPlayer, updatePosition } = useMultiplayer();
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -34,15 +35,25 @@ const App: React.FC = () => {
       <MapContainer>
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
-          center={defaultCenter}
+          center={currentPlayer?.position || defaultCenter}
           zoom={15}
           onLoad={onLoad}
           onUnmount={onUnmount}
         >
-          <Marker
-            position={playerPosition}
-            title="Player"
-          />
+          {/* Render all players */}
+          {Array.from(players.values()).map((player) => (
+            <Marker
+              key={player.id}
+              position={player.position}
+              title={`Player ${player.id}`}
+              icon={{
+                url: player.id === currentPlayer?.id 
+                  ? 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                  : 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: new google.maps.Size(32, 32)
+              }}
+            />
+          ))}
         </GoogleMap>
       </MapContainer>
     </LoadScript>
