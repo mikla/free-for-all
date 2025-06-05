@@ -20,12 +20,14 @@ export const useMultiplayer = () => {
 
     // Handle initial connection
     socket.on('init', (data: Player) => {
+      console.log('Player initialized:', data.id);
       setCurrentPlayer(data);
       setPlayers(prev => new Map(prev).set(data.id, data));
     });
 
     // Handle existing players
     socket.on('existingPlayers', (existingPlayers: Player[]) => {
+      console.log('Received existing players:', existingPlayers.length);
       setPlayers(prev => {
         const newPlayers = new Map(prev);
         existingPlayers.forEach(player => {
@@ -37,6 +39,7 @@ export const useMultiplayer = () => {
 
     // Handle new players joining
     socket.on('playerJoined', (player: Player) => {
+      console.log('New player joined:', player.id);
       setPlayers(prev => new Map(prev).set(player.id, player));
     });
 
@@ -47,9 +50,11 @@ export const useMultiplayer = () => {
 
     // Handle player disconnection
     socket.on('playerLeft', (playerId: string) => {
+      console.log('Player disconnected:', playerId);
       setPlayers(prev => {
         const newPlayers = new Map(prev);
         newPlayers.delete(playerId);
+        console.log('Remaining players:', newPlayers.size);
         return newPlayers;
       });
     });

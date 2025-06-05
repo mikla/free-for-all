@@ -34,6 +34,7 @@ function getRandomPositionInCity(cityCoords: { lat: number; lng: number }): { la
 
 io.on('connection', (socket) => {
   console.log('Player connected:', socket.id);
+  console.log('Total players:', players.size + 1);
 
   // Get player's IP and determine their city
   const ip = socket.handshake.address;
@@ -67,6 +68,7 @@ io.on('connection', (socket) => {
     }));
 
   if (existingPlayers.length > 0) {
+    console.log('Sending existing players to new player:', existingPlayers.length);
     socket.emit('existingPlayers', existingPlayers);
   }
 
@@ -93,6 +95,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     players.delete(socket.id);
+    console.log('Remaining players:', players.size);
     io.emit('playerLeft', socket.id);
   });
 });

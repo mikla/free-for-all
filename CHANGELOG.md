@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Added client-side socket service
 - Added multiplayer hook for player management
 - Updated App component to display all players on the map
+- Added detailed logging for player connections and disconnections
 
 ### Changed
 - Updated Node.js to v22.16.0 (LTS)
