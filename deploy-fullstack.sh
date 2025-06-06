@@ -20,6 +20,9 @@ echo "🔨 Building frontend..."
 export VITE_SERVER_URL="http://$DROPLET_IP"
 export VITE_GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_KEY"
 
+echo "📋 Generating version info..."
+npm run version
+
 # Build and check for success
 npm run build
 

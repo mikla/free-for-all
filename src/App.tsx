@@ -140,28 +140,6 @@ const DeathOverlay = styled.div`
   color: white;
 `;
 
-const DeathMessage = styled.h1`
-  color: #ff4444;
-  font-size: 48px;
-  margin-bottom: 20px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-`;
-
-const RespawnButton = styled.button`
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 15px 30px;
-  font-size: 18px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 20px;
-  
-  &:hover {
-    background: #45a049;
-  }
-`;
-
 const KillCounter = styled.div`
   position: absolute;
   top: 120px;

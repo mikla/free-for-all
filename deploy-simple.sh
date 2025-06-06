@@ -19,6 +19,11 @@ echo "🚀 Simple deployment to Digital Ocean (avoiding Docker Compose)..."
 echo "🔨 Building frontend..."
 export VITE_SERVER_URL="http://$DROPLET_IP"
 export VITE_GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_KEY"
+
+# Generate version file
+echo "📋 Generating version info..."
+npm run version
+
 npm run build
 
 if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then

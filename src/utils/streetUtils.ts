@@ -135,7 +135,7 @@ export const getValidMovementPositions = async (
 
 // Enhanced movement validation function
 export const validateMovement = async (
-  fromPosition: { lat: number; lng: number },
+  _fromPosition: { lat: number; lng: number },
   toPosition: { lat: number; lng: number },
   directionsService: google.maps.DirectionsService
 ): Promise<{ isValid: boolean; snappedPosition?: { lat: number; lng: number } }> => {
