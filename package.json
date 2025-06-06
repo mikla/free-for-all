@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run version && vite",
     "prebuild": "node scripts/generate-version.js",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "version": "node scripts/generate-version.js"
+    "version": "node scripts/generate-version.js",
+    "postinstall": "npm run version"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.19.2",
