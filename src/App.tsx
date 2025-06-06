@@ -5,6 +5,7 @@ import { useMultiplayer } from './hooks/useMultiplayer';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
 import { useFightMode } from './hooks/useFightMode';
 import { useSpawnValidation } from './hooks/useSpawnValidation';
+import { useMobileControls } from './hooks/useMobileControls';
 import { validateSpawnLocation } from './utils/streetUtils';
 import { VersionDisplay } from './components/VersionDisplay';
 
@@ -308,6 +309,76 @@ const DeathOverlay = styled.div`
   }
 `;
 
+// Mobile Controls Overlay
+const MobileControlsOverlay = styled.div`
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  z-index: 1000;
+  display: none;
+  
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  @media (pointer: coarse) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+`;
+
+const ControlButton = styled.button`
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  
+  &:active {
+    background: rgba(0, 120, 255, 0.8);
+    border-color: rgba(0, 120, 255, 1);
+    transform: scale(0.95);
+  }
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.9);
+  }
+  
+  @media (max-width: 480px) {
+    width: 45px;
+    height: 45px;
+    font-size: 16px;
+  }
+`;
+
+const ControlRow = styled.div`
+  display: flex;
+  gap: 5px;
+  align-items: center;
+`;
+
+const ControlCenter = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+`;
+
 const defaultCenter = {
   lat: 51.5074, // London coordinates as default
   lng: -0.1278
@@ -327,6 +398,13 @@ const App: React.FC = () => {
   const { isInFightMode, nearbyPlayers } = useFightMode();
   const { isValidatingSpawn } = useSpawnValidation(directionsService, currentPlayer, updatePosition);
   const [rescueCooldown, setRescueCooldown] = useState(0);
+  const [mobileBlockedNotification, setMobileBlockedNotification] = useState(false);
+  
+  // Mobile controls
+  const { handleMobileMovement, handleMobileAction } = useMobileControls({
+    directionsService,
+    showBlockedNotification: setMobileBlockedNotification
+  });
 
   // Always center the map on the current player
   useEffect(() => {
@@ -517,11 +595,6 @@ const App: React.FC = () => {
           </Instructions>
         </BottomPanel>
 
-        {/* Blocked Movement Notification */}
-        <BlockedMovementNotification show={showBlockedNotification}>
-          🚫 Can't walk through buildings! Try a street path.
-        </BlockedMovementNotification>
-
         {/* Death Overlay */}
         {currentPlayer?.isDead && (
           <DeathOverlay>
@@ -552,6 +625,26 @@ const App: React.FC = () => {
         )}
 
         <VersionDisplay />
+
+        {/* Mobile Controls Overlay */}
+        <MobileControlsOverlay>
+          <ControlRow>
+            <ControlButton onClick={() => handleMobileMovement('up')}>↑</ControlButton>
+          </ControlRow>
+          <ControlRow>
+            <ControlButton onClick={() => handleMobileMovement('left')}>←</ControlButton>
+            <ControlButton onClick={() => handleMobileMovement('down')}>↓</ControlButton>
+            <ControlButton onClick={() => handleMobileMovement('right')}>→</ControlButton>
+          </ControlRow>
+          <ControlCenter>
+            <ControlButton onClick={() => handleMobileAction('attack')} title="Attack">⚔️</ControlButton>
+          </ControlCenter>
+        </MobileControlsOverlay>
+
+        {/* Mobile Blocked Movement Notification */}
+        <BlockedMovementNotification show={mobileBlockedNotification || showBlockedNotification}>
+          🚫 Can't move there! Try a different direction.
+        </BlockedMovementNotification>
       </MapContainer>
     </LoadScript>
   );

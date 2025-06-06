@@ -170,6 +170,14 @@ All notable changes to this project will be documented in this file.
   - Enhanced readability with better contrast and font sizes
   - Optimized touch targets for mobile interaction
   - Made VersionDisplay component mobile-friendly
+- **Mobile Touch Controls**: Added on-screen controls for mobile gameplay
+  - Created `useMobileControls` hook for touch-based movement and actions
+  - Added directional control buttons (↑ ← ↓ →) for movement
+  - Added action buttons: Attack (⚔️) and Rescue (🆘)
+  - Mobile controls only appear on touch devices and mobile screens (768px and below)
+  - Integrated with existing street validation and movement system
+  - Responsive button sizes with proper touch targets
+  - Visual feedback on button press with scale animation
 - Improved street movement validation system with better error handling
 - Added spawn location debugging and logging
 
