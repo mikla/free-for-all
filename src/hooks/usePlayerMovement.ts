@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useMultiplayer } from './useMultiplayer';
-import { snapToStreet, isOnStreet } from '../utils/streetUtils';
+import { validateMovement } from '../utils/streetUtils';
 
 interface MovementState {
   isMoving: boolean;
@@ -16,6 +16,8 @@ export const usePlayerMovement = (directionsService: google.maps.DirectionsServi
     isMoving: false,
     direction: null
   });
+  const [lastBlockedTime, setLastBlockedTime] = useState<number>(0);
+  const [showBlockedNotification, setShowBlockedNotification] = useState<boolean>(false);
 
   const movePlayer = useCallback(async (direction: { lat: number; lng: number }) => {
     if (!currentPlayer || !directionsService) return;
@@ -25,34 +27,59 @@ export const usePlayerMovement = (directionsService: google.maps.DirectionsServi
       lng: currentPlayer.position.lng + direction.lng
     };
 
-    // Check if the new position is on a street
-    if (await isOnStreet(newPosition, directionsService)) {
-      // Snap to the nearest street point
-      const snappedPosition = await snapToStreet(newPosition, directionsService);
-      updatePosition(snappedPosition);
+    // Validate the movement using the enhanced street validation
+    const validation = await validateMovement(
+      currentPlayer.position,
+      newPosition,
+      directionsService
+    );
+
+    if (validation.isValid && validation.snappedPosition) {
+      // Use the snapped position to ensure player stays on streets
+      updatePosition(validation.snappedPosition);
+      console.log('Valid movement to street position:', validation.snappedPosition);
+      
+      // Hide notification if movement is successful
+      setShowBlockedNotification(false);
+    } else {
+      // Show visual feedback for blocked movement (but not too frequently)
+      const now = Date.now();
+      if (now - lastBlockedTime > 1000) { // Only show message once per second
+        console.log('🚫 Movement blocked - not on a street! Try a different direction.');
+        setLastBlockedTime(now);
+        
+        // Show visual notification
+        setShowBlockedNotification(true);
+        // Hide notification after 2 seconds
+        setTimeout(() => setShowBlockedNotification(false), 2000);
+      }
     }
-  }, [currentPlayer, directionsService, updatePosition]);
+  }, [currentPlayer, directionsService, updatePosition, lastBlockedTime]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const step = 0.0001; // approximately 10 meters
+      const step = 0.00015; // Slightly larger step for better street navigation (~15 meters)
       let direction = null;
 
       switch (event.key) {
         case 'ArrowUp':
         case 'w':
+        case 'W':
           direction = { lat: step, lng: 0 };
           break;
         case 'ArrowDown':
         case 's':
+        case 'S':
           direction = { lat: -step, lng: 0 };
           break;
         case 'ArrowLeft':
         case 'a':
+        case 'A':
           direction = { lat: 0, lng: -step };
           break;
         case 'ArrowRight':
         case 'd':
+        case 'D':
           direction = { lat: 0, lng: step };
           break;
       }
@@ -63,7 +90,8 @@ export const usePlayerMovement = (directionsService: google.maps.DirectionsServi
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(event.key)) {
+      const movementKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'];
+      if (movementKeys.includes(event.key)) {
         setMovementState({ isMoving: false, direction: null });
       }
     };
@@ -84,7 +112,7 @@ export const usePlayerMovement = (directionsService: google.maps.DirectionsServi
     if (movementState.isMoving && movementState.direction) {
       movementInterval = setInterval(() => {
         movePlayer(movementState.direction!);
-      }, 100); // Update position every 100ms
+      }, 150); // Slightly slower for better street validation
     }
 
     return () => {
@@ -96,6 +124,7 @@ export const usePlayerMovement = (directionsService: google.maps.DirectionsServi
 
   return {
     isMoving: movementState.isMoving,
-    currentDirection: movementState.direction
+    currentDirection: movementState.direction,
+    showBlockedNotification
   };
 }; 

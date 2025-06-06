@@ -10,6 +10,7 @@ interface Player {
   health: number;
   kills: number;
   isDead: boolean;
+  isBlocked?: boolean;
   character: {
     id: string;
     name: string;

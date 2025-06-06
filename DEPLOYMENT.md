@@ -7,7 +7,7 @@ This guide will help you deploy your multiplayer battle royale game to Digital O
 - Digital Ocean account
 - Google Maps API key
 - Basic terminal/SSH knowledge
-- Git repository (for Option 1)
+- Git repository
 
 ## 🖥️ Step 1: Create Digital Ocean Droplet
 
@@ -19,207 +19,231 @@ This guide will help you deploy your multiplayer battle royale game to Digital O
    - **Authentication**: SSH Key (recommended) or Password
    - **Hostname**: `game-server` or similar
 
-## 🔧 Step 2: Set Up Server
+## 🚀 Step 2: One-Command Full-Stack Deployment (Recommended)
 
-SSH into your droplet:
+### 🥇 **Deploy Everything with One Command!**
+
+This is the **easiest and fastest** method - deploys both frontend and backend to the same droplet:
+
 ```bash
-ssh root@your-droplet-ip
+./deploy-fullstack.sh YOUR-DROPLET-IP YOUR-GOOGLE-MAPS-API-KEY
 ```
 
-Install Docker and Docker Compose:
+**Example:**
 ```bash
-# Update system
-apt update && apt upgrade -y
-
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-
-# Install Docker Compose
-apt install docker-compose -y
-
-# Start Docker
-systemctl start docker
-systemctl enable docker
+./deploy-fullstack.sh 165.22.123.456 AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw
 ```
 
-## 📦 Step 3: Choose Your Deployment Method
+### ✨ **What this does:**
+1. 🔨 **Builds frontend** locally with proper environment variables
+2. 🖥️ **Deploys/updates backend** using Docker
+3. 📤 **Uploads frontend** files to the server
+4. ⚙️ **Configures nginx** to serve everything
+5. 🌐 **Your game is live** at `http://YOUR-DROPLET-IP`
 
-### 🥇 Option 1: Git-based Deployment (Recommended)
-**Fastest and most efficient - no node_modules transfer!**
+### 🎯 **Benefits:**
+- ✅ **One URL** - everything works from `http://YOUR-DROPLET-IP`
+- ✅ **No CORS issues** (same domain for frontend/backend)
+- ✅ **Proper WebSocket support** (nginx proxying)
+- ✅ **Easy management** (one server, one command)
+- ✅ **Cost effective** (single $6/month droplet)
 
-1. Push your code to GitHub/GitLab
-2. Deploy using Git:
+---
+
+## 🔧 Alternative: Manual Deployment Methods
+
+If you prefer manual deployment or need more control:
+
+### 🥈 Option 1: Backend-Only Deployment
+**For when you want to deploy frontend separately**
+
 ```bash
-./deploy-server.sh YOUR-DROPLET-IP https://github.com/username/hackaton-game.git
+./deploy-docker-only.sh YOUR-DROPLET-IP https://github.com/mikla/free-for-all.git
 ```
 
-**Pros:**
-- ✅ Fastest deployment
-- ✅ No large file transfers
-- ✅ Version control integration
-- ✅ Easy rollbacks
-
-### 🥈 Option 2: Rsync with Exclusions
-**Good for when you can't use Git**
+### 🥉 Option 2: Rsync Deployment
+**Good for development/testing**
 
 ```bash
 ./deploy-rsync.sh YOUR-DROPLET-IP
 ```
 
-**Pros:**
-- ✅ Excludes node_modules
-- ✅ Shows progress
-- ✅ Only syncs changed files
+---
 
-### 🥉 Option 3: Artifact Deployment
-**Build locally, deploy only production files**
+## 🌐 Frontend-Only Deployment Options
 
+If you're using the backend-only deployment above:
+
+### Option A: Netlify (Free & Easy)
+1. Build locally:
+   ```bash
+   ./deploy-frontend.sh http://YOUR-DROPLET-IP:3001 YOUR-GOOGLE-MAPS-KEY
+   ```
+2. Go to [Netlify Drop](https://app.netlify.com/drop)
+3. Drag and drop the `dist` folder
+4. Done! 🎉
+
+### Option B: Vercel (GitHub Integration)
+1. Connect your GitHub repository to Vercel
+2. Set environment variables:
+   - `VITE_GOOGLE_MAPS_API_KEY`
+   - `VITE_SERVER_URL=http://YOUR-DROPLET-IP:3001`
+
+---
+
+## ⚡ Quick Start Commands
+
+### 🚀 **Full-Stack (All-in-One) - RECOMMENDED**
 ```bash
-./deploy-artifact.sh YOUR-DROPLET-IP
+./deploy-fullstack.sh 165.22.123.456 your_google_maps_key
+```
+**Result:** Game live at `http://165.22.123.456` ✨
+
+### 🖥️ **Backend Only**
+```bash
+./deploy-docker-only.sh 165.22.123.456 https://github.com/mikla/free-for-all.git
+```
+**Result:** API live at `http://165.22.123.456:3001`
+
+### 🌐 **Frontend Build**
+```bash
+./deploy-frontend.sh http://165.22.123.456:3001 your_google_maps_key
+```
+**Result:** Files ready in `dist/` folder for upload
+
+---
+
+## 🎮 Testing Your Deployment
+
+After deployment:
+
+1. **Visit your game**: `http://YOUR-DROPLET-IP`
+2. **Open multiple browser tabs** to test multiplayer
+3. **Try the battle royale features**:
+   - Move with WASD or arrow keys
+   - Get close to other players (red "FIGHT MODE")
+   - Press SPACE to shoot when enemies are in range
+   - Watch the death/respawn system
+
+---
+
+## 📊 Monitoring & Debugging
+
+### Check Server Status
+```bash
+# SSH into your droplet
+ssh root@YOUR-DROPLET-IP
+
+# Check backend (Docker)
+cd /root/game-deployment
+docker-compose ps
+docker-compose logs -f
+
+# Check frontend (nginx)
+systemctl status nginx
+ls -la /var/www/game/
+
+# Check nginx logs
+tail -f /var/log/nginx/error.log
 ```
 
-**Pros:**
-- ✅ Smallest deployment package
-- ✅ Build locally (faster)
-- ✅ Only production files transferred
+### Common Issues & Solutions
 
-## 🌐 Step 4: Deploy Frontend
-
-### Option A: Netlify (Recommended)
-1. Build your frontend locally:
-   ```bash
-   npm run build
-   ```
-
-2. Create `.env` file with production values:
-   ```
-   VITE_GOOGLE_MAPS_API_KEY=your_actual_api_key
-   VITE_SERVER_URL=http://your-droplet-ip:3001
-   ```
-
-3. Deploy `dist` folder to Netlify
-
-### Option B: Vercel
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard:
-   - `VITE_GOOGLE_MAPS_API_KEY`
-   - `VITE_SERVER_URL`
-
-## 🔐 Step 5: Security & Domain Setup
-
-### Set up SSL (Optional but recommended)
+#### ❌ **"Cannot connect to server"**
 ```bash
-# Install Nginx
-apt install nginx -y
+# Check if backend is running
+ssh root@YOUR-IP 'cd /root/game-deployment && docker-compose ps'
+
+# Restart backend if needed
+ssh root@YOUR-IP 'cd /root/game-deployment && docker-compose restart'
+```
+
+#### ❌ **"Page not found" or nginx errors**
+```bash
+# Check nginx configuration
+ssh root@YOUR-IP 'nginx -t'
+
+# Restart nginx
+ssh root@YOUR-IP 'systemctl restart nginx'
+
+# Check frontend files
+ssh root@YOUR-IP 'ls -la /var/www/game/'
+```
+
+#### ❌ **Build errors locally**
+- Make sure you have Node.js installed
+- Run `npm install` first
+- Check that your Google Maps API key is valid
+
+---
+
+## 🔐 Security & SSL Setup (Optional)
+
+### Add HTTPS with Let's Encrypt
+```bash
+# SSH into your droplet
+ssh root@YOUR-DROPLET-IP
 
 # Install Certbot
 apt install certbot python3-certbot-nginx -y
 
-# Get SSL certificate
-certbot --nginx -d your-domain.com
+# Get SSL certificate (replace with your domain)
+certbot --nginx -d yourdomain.com
+
+# Auto-renewal is configured automatically
 ```
 
-### Configure Nginx proxy:
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    
-    location / {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-## ⚡ Quick Deployment Commands
-
+### Configure Firewall
 ```bash
-# Method 1: Git-based (fastest)
-./deploy-server.sh 165.22.123.456 https://github.com/username/repo.git
-
-# Method 2: Rsync (no node_modules)
-./deploy-rsync.sh 165.22.123.456
-
-# Method 3: Artifacts only
-./deploy-artifact.sh 165.22.123.456
+# Allow only necessary ports
+ufw allow ssh
+ufw allow 80
+ufw allow 443
+ufw enable
 ```
 
-## 🔍 Step 6: Testing
-
-1. Check server health: `http://your-droplet-ip:3001`
-2. Test frontend connection to server
-3. Open multiple browser tabs to test multiplayer
-
-## 📊 Monitoring
-
-Monitor your server:
-```bash
-# Check Docker status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
-
-# Check resource usage
-htop
-```
-
-## 🛠️ Troubleshooting
-
-### Server won't start:
-- Check logs: `docker-compose logs`
-- Verify port 3001 is not in use: `netstat -tulpn | grep 3001`
-- Check firewall: `ufw status`
-
-### Frontend can't connect:
-- Verify `VITE_SERVER_URL` is correct
-- Check CORS settings in server
-- Ensure port 3001 is open
-
-### Deployment Issues:
-```bash
-# Re-deploy
-./deploy-server.sh YOUR-IP YOUR-REPO
-
-# Check deployment logs
-ssh root@YOUR-IP 'cd /root/game-deployment && docker-compose logs'
-
-# Restart services
-ssh root@YOUR-IP 'cd /root/game-deployment && docker-compose restart'
-```
+---
 
 ## ⚡ Performance Comparison
 
-| Method | Transfer Size | Deploy Time | Best For |
-|--------|---------------|-------------|----------|
-| Git-based | ~500KB | ~30 seconds | Production |
-| Rsync | ~2MB | ~45 seconds | Development |
-| Artifact | ~1MB | ~40 seconds | CI/CD |
-| ~~SCP (old)~~ | ~~200MB+~~ | ~~5+ minutes~~ | ~~Never~~ |
+| Method | Setup Time | Complexity | Best For |
+|--------|------------|------------|----------|
+| **Full-Stack** | **2 minutes** | **Easy** | **Production** |
+| Backend-Only | 3 minutes | Medium | Custom frontend |
+| Netlify Split | 4 minutes | Medium | Free hosting |
+| Manual Setup | 10+ minutes | Hard | Learning |
 
-## 💰 Cost Estimate
+---
 
-- **Digital Ocean Droplet**: $6-12/month
-- **Domain** (optional): $10-15/year
-- **Total**: ~$6-12/month
+## 💰 Cost Breakdown
 
-## 🎮 Your Game is Live!
+### Full-Stack on Digital Ocean
+- **Droplet**: $6/month (Basic plan)
+- **Domain** (optional): $12/year
+- **SSL**: Free (Let's Encrypt)
+- **Total**: ~$6/month 💚
 
-Once deployed, share your game URL and watch players battle it out in real-time! 🔥
+### Split Deployment
+- **Backend Droplet**: $6/month
+- **Frontend**: Free (Netlify)
+- **Total**: ~$6/month
 
-## 📞 Support
+---
 
-If you encounter issues:
-1. Check the troubleshooting section
-2. Review Docker logs
-3. Verify environment variables
-4. Test locally first 
+## 🎉 You're Live!
+
+Once deployed, your multiplayer battle royale game is ready for the world! 
+
+### Share Your Game
+- **URL**: `http://YOUR-DROPLET-IP`
+- **Features**: Real-time multiplayer, combat system, death/respawn
+- **Players**: Support for multiple simultaneous players
+- **Map**: London streets with clustered spawn points for instant action
+
+### Next Steps
+- Share the URL with friends for multiplayer testing
+- Consider adding a custom domain
+- Monitor server performance as player count grows
+- Add SSL for production use
+
+**🚀 Happy Gaming!** 🎮 

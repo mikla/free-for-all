@@ -67,6 +67,24 @@ const Instructions = styled.div`
   font-size: 14px;
 `;
 
+const BlockedMovementNotification = styled.div<{ show: boolean }>`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 0, 0, 0.9);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 10px;
+  z-index: 2000;
+  font-weight: bold;
+  opacity: ${props => props.show ? 1 : 0};
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border: 2px solid #ff4444;
+  box-shadow: 0 4px 20px rgba(255, 0, 0, 0.3);
+`;
+
 const DeathOverlay = styled.div`
   position: absolute;
   top: 0;
@@ -189,7 +207,7 @@ const App: React.FC = () => {
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const { players, currentPlayer, respawn } = useMultiplayer();
-  usePlayerMovement(directionsService);
+  const { showBlockedNotification } = usePlayerMovement(directionsService);
   const { isInFightMode, nearbyPlayers } = useFightMode();
 
   // Always center the map on the current player
@@ -339,19 +357,37 @@ const App: React.FC = () => {
           )}
         </Instructions>
 
+        {/* Blocked Movement Notification */}
+        <BlockedMovementNotification show={showBlockedNotification}>
+          🚫 Can't walk through buildings! Try a street path.
+        </BlockedMovementNotification>
+
         {/* Death Overlay */}
         {currentPlayer?.isDead && (
           <DeathOverlay>
-            <DeathMessage>YOU ARE DEAD</DeathMessage>
-            <div style={{ fontSize: '24px', marginBottom: '10px' }}>
-              You were eliminated!
-            </div>
-            <div style={{ fontSize: '18px', marginBottom: '10px' }}>
+            <h1 style={{ color: '#ff0000', fontSize: '4rem', marginBottom: '20px' }}>
+              ☠️ YOU ARE DEAD ☠️
+            </h1>
+            <p style={{ fontSize: '1.5rem', marginBottom: '10px' }}>
               Final Score: {currentPlayer.kills} kills
-            </div>
-            <RespawnButton onClick={respawn}>
+            </p>
+            <p style={{ fontSize: '1.2rem', marginBottom: '30px', opacity: 0.8 }}>
+              You fought valiantly as {currentPlayer.character.emoji} {currentPlayer.character.name}
+            </p>
+            <button
+              onClick={respawn}
+              style={{
+                padding: '15px 30px',
+                fontSize: '1.2rem',
+                background: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
               RESPAWN
-            </RespawnButton>
+            </button>
           </DeathOverlay>
         )}
       </MapContainer>
