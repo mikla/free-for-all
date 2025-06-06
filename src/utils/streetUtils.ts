@@ -173,7 +173,7 @@ export const findNearestStreet = async (
   }
 
   // Try expanding circle search
-  const radiusSteps = [50, 100, 200, 500, 1000]; // Search radiuses in meters
+  const radiusSteps = [50, 100, 200, 500, 1000].filter(r => r <= maxRadius); // Search radiuses in meters
   
   for (const radius of radiusSteps) {
     console.log(`Searching for street within ${radius}m radius`);
