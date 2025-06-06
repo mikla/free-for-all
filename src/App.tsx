@@ -4,6 +4,8 @@ import styled from 'styled-components';
 import { useMultiplayer } from './hooks/useMultiplayer';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
 import { useFightMode } from './hooks/useFightMode';
+import { useSpawnValidation } from './hooks/useSpawnValidation';
+import { validateSpawnLocation } from './utils/streetUtils';
 import { VersionDisplay } from './components/VersionDisplay';
 
 // Function to create character marker icon
@@ -52,59 +54,211 @@ const MapContainer = styled.div`
   position: relative;
 `;
 
-const FightModeIndicator = styled.div<{ isInFightMode: boolean }>`
+// Top-left UI panel for main game info
+const TopLeftPanel = styled.div`
   position: absolute;
-  top: 20px;
-  left: 20px;
-  background: ${props => props.isInFightMode ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.7)'};
-  color: white;
-  padding: 10px 15px;
-  border-radius: 5px;
+  top: 10px;
+  left: 10px;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 280px;
+  
+  @media (max-width: 768px) {
+    max-width: 250px;
+    top: 5px;
+    left: 5px;
+  }
+`;
+
+const FightModeIndicator = styled.div<{ isInFightMode: boolean }>`
+  background: ${props => props.isInFightMode ? 'rgba(255, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0.8)'};
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
   font-weight: bold;
   border: 2px solid ${props => props.isInFightMode ? '#ff0000' : '#333'};
+  font-size: 14px;
+  
+  @media (max-width: 768px) {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
 `;
 
 const HealthBar = styled.div`
-  position: absolute;
-  top: 70px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   color: white;
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 1000;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
 `;
 
 const HealthBarFill = styled.div<{ health: number }>`
   width: ${props => props.health}%;
-  height: 20px;
+  height: 16px;
   background: ${props => 
     props.health > 50 ? '#4CAF50' : 
     props.health > 25 ? '#FF9800' : '#F44336'
   };
   border-radius: 3px;
   transition: width 0.3s ease;
+  
+  @media (max-width: 768px) {
+    height: 14px;
+  }
 `;
 
 const HealthBarContainer = styled.div`
-  width: 200px;
-  height: 20px;
+  width: 180px;
+  height: 16px;
   background: #333;
   border-radius: 3px;
-  margin-top: 5px;
+  margin-top: 4px;
+  
+  @media (max-width: 768px) {
+    width: 150px;
+    height: 14px;
+  }
+`;
+
+const KillCounter = styled.div`
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  border: 1px solid #333;
+  font-size: 14px;
+  
+  @media (max-width: 768px) {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+`;
+
+const CharacterInfo = styled.div`
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #333;
+  font-size: 13px;
+  
+  @media (max-width: 768px) {
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 6px;
+  }
+`;
+
+const CharacterEmoji = styled.span`
+  font-size: 18px;
+  
+  @media (max-width: 768px) {
+    font-size: 16px;
+  }
+`;
+
+// Top-right UI panel for actions
+const TopRightPanel = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  
+  @media (max-width: 768px) {
+    top: 5px;
+    right: 5px;
+  }
+`;
+
+const SpawnValidationIndicator = styled.div<{ isValidating: boolean }>`
+  background: rgba(255, 165, 0, 0.95);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  display: ${props => props.isValidating ? 'block' : 'none'};
+  border: 2px solid #ff8c00;
+  white-space: nowrap;
+  
+  @media (max-width: 768px) {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+`;
+
+const RescueButton = styled.button`
+  background: rgba(255, 69, 0, 0.95);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+  border: 2px solid #ff4500;
+  white-space: nowrap;
+  
+  &:hover {
+    background: rgba(255, 69, 0, 1);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+`;
+
+// Bottom UI panel for instructions
+const BottomPanel = styled.div`
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
+  
+  @media (max-width: 768px) {
+    bottom: 5px;
+    left: 5px;
+    right: 5px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
 `;
 
 const Instructions = styled.div`
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   color: white;
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 1000;
-  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  border: 1px solid #333;
+  max-width: 300px;
+  
+  @media (max-width: 768px) {
+    font-size: 10px;
+    padding: 6px 10px;
+    max-width: 100%;
+  }
 `;
 
 const BlockedMovementNotification = styled.div<{ show: boolean }>`
@@ -112,9 +266,9 @@ const BlockedMovementNotification = styled.div<{ show: boolean }>`
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(255, 0, 0, 0.9);
+  background: rgba(255, 0, 0, 0.95);
   color: white;
-  padding: 15px 20px;
+  padding: 12px 20px;
   border-radius: 10px;
   z-index: 2000;
   font-weight: bold;
@@ -123,6 +277,14 @@ const BlockedMovementNotification = styled.div<{ show: boolean }>`
   pointer-events: none;
   border: 2px solid #ff4444;
   box-shadow: 0 4px 20px rgba(255, 0, 0, 0.3);
+  font-size: 14px;
+  text-align: center;
+  
+  @media (max-width: 768px) {
+    padding: 10px 16px;
+    font-size: 12px;
+    max-width: 250px;
+  }
 `;
 
 const DeathOverlay = styled.div`
@@ -138,36 +300,12 @@ const DeathOverlay = styled.div`
   align-items: center;
   z-index: 2000;
   color: white;
-`;
-
-const KillCounter = styled.div`
-  position: absolute;
-  top: 120px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 1000;
-  font-weight: bold;
-`;
-
-const CharacterInfo = styled.div`
-  position: absolute;
-  top: 160px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const CharacterEmoji = styled.span`
-  font-size: 24px;
+  text-align: center;
+  padding: 20px;
+  
+  @media (max-width: 768px) {
+    padding: 15px;
+  }
 `;
 
 const defaultCenter = {
@@ -184,9 +322,11 @@ const App: React.FC = () => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
-  const { players, currentPlayer, respawn } = useMultiplayer();
+  const { players, currentPlayer, respawn, updatePosition } = useMultiplayer();
   const { showBlockedNotification } = usePlayerMovement(directionsService);
   const { isInFightMode, nearbyPlayers } = useFightMode();
+  const { isValidatingSpawn } = useSpawnValidation(directionsService, currentPlayer, updatePosition);
+  const [rescueCooldown, setRescueCooldown] = useState(0);
 
   // Always center the map on the current player
   useEffect(() => {
@@ -216,6 +356,34 @@ const App: React.FC = () => {
   const onGoogleMapsLoad = useCallback(() => {
     setIsGoogleMapsLoaded(true);
   }, []);
+
+  // Rescue function for stuck players
+  const rescuePlayer = useCallback(async () => {
+    if (!currentPlayer || !directionsService || rescueCooldown > 0) return;
+    
+    console.log('Rescuing stuck player...');
+    setRescueCooldown(10); // 10 second cooldown
+    
+    try {
+      // Try to find a nearby street
+      const rescuePosition = await validateSpawnLocation(currentPlayer.position, directionsService);
+      updatePosition(rescuePosition);
+      
+      // Start cooldown timer
+      const timer = setInterval(() => {
+        setRescueCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error rescuing player:', error);
+      setRescueCooldown(0);
+    }
+  }, [currentPlayer, directionsService, updatePosition, rescueCooldown]);
 
   if (currentPlayer) {
     console.log('Rendering currentPlayer marker at:', currentPlayer.position);
@@ -296,44 +464,58 @@ const App: React.FC = () => {
             </>
           )}
         </GoogleMap>
-        <FightModeIndicator isInFightMode={isInFightMode}>
-          {isInFightMode ? 'FIGHT MODE' : 'Normal Mode'}
-        </FightModeIndicator>
-        
-        {currentPlayer && (
-          <>
-            <HealthBar>
-              Health: {currentPlayer.health}/100
-              <HealthBarContainer>
-                <HealthBarFill health={currentPlayer.health} />
-              </HealthBarContainer>
-            </HealthBar>
-            
-            <KillCounter>
-              Kills: {currentPlayer.kills}
-            </KillCounter>
-            
-            <CharacterInfo>
-              <CharacterEmoji>{currentPlayer.character.emoji}</CharacterEmoji>
-              <div>
-                <div style={{ fontWeight: 'bold' }}>{currentPlayer.character.name}</div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                  {currentPlayer.character.description}
+        <TopLeftPanel>
+          <FightModeIndicator isInFightMode={isInFightMode}>
+            {isInFightMode ? 'FIGHT MODE' : 'Normal Mode'}
+          </FightModeIndicator>
+          
+          {currentPlayer && (
+            <>
+              <HealthBar>
+                Health: {currentPlayer.health}/100
+                <HealthBarContainer>
+                  <HealthBarFill health={currentPlayer.health} />
+                </HealthBarContainer>
+              </HealthBar>
+              
+              <KillCounter>
+                Kills: {currentPlayer.kills}
+              </KillCounter>
+              
+              <CharacterInfo>
+                <CharacterEmoji>{currentPlayer.character.emoji}</CharacterEmoji>
+                <div>
+                  <div style={{ fontWeight: 'bold' }}>{currentPlayer.character.name}</div>
+                  <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                    {currentPlayer.character.description}
+                  </div>
                 </div>
-              </div>
-            </CharacterInfo>
-          </>
-        )}
-        
-        <Instructions>
-          <div>WASD or Arrow Keys: Move</div>
-          {isInFightMode && !currentPlayer?.isDead && <div>SPACE: Shoot (when enemies nearby)</div>}
-          {nearbyPlayers.length > 0 && !currentPlayer?.isDead && (
-            <div style={{ color: '#ff4444' }}>
-              Enemies in range: {nearbyPlayers.length}
-            </div>
+              </CharacterInfo>
+            </>
           )}
-        </Instructions>
+        </TopLeftPanel>
+        
+        <TopRightPanel>
+          <SpawnValidationIndicator isValidating={isValidatingSpawn}>
+            🔍 Finding nearest street...
+          </SpawnValidationIndicator>
+          
+          <RescueButton onClick={rescuePlayer} disabled={rescueCooldown > 0}>
+            {rescueCooldown > 0 ? `Rescuing in ${rescueCooldown} seconds` : 'Rescue'}
+          </RescueButton>
+        </TopRightPanel>
+
+        <BottomPanel>
+          <Instructions>
+            <div>WASD or Arrow Keys: Move</div>
+            {isInFightMode && !currentPlayer?.isDead && <div>SPACE: Shoot (when enemies nearby)</div>}
+            {nearbyPlayers.length > 0 && !currentPlayer?.isDead && (
+              <div style={{ color: '#ff4444' }}>
+                Enemies in range: {nearbyPlayers.length}
+              </div>
+            )}
+          </Instructions>
+        </BottomPanel>
 
         {/* Blocked Movement Notification */}
         <BlockedMovementNotification show={showBlockedNotification}>

@@ -156,4 +156,90 @@ export const validateMovement = async (
     // On error, allow movement to avoid blocking the player
     return { isValid: true, snappedPosition: toPosition };
   }
+};
+
+// Find the nearest street location for spawn points
+export const findNearestStreet = async (
+  position: { lat: number; lng: number },
+  directionsService: google.maps.DirectionsService,
+  maxRadius: number = 1000 // Search within 1km radius
+): Promise<{ lat: number; lng: number }> => {
+  console.log('Finding nearest street for position:', position);
+  
+  // First try the position itself
+  if (await isOnStreet(position, directionsService)) {
+    console.log('Position is already on street');
+    return position;
+  }
+
+  // Try expanding circle search
+  const radiusSteps = [50, 100, 200, 500, 1000]; // Search radiuses in meters
+  
+  for (const radius of radiusSteps) {
+    console.log(`Searching for street within ${radius}m radius`);
+    
+    // Try 8 directions around the position
+    const directions = [
+      { lat: 1, lng: 0 },     // North
+      { lat: 1, lng: 1 },     // Northeast  
+      { lat: 0, lng: 1 },     // East
+      { lat: -1, lng: 1 },    // Southeast
+      { lat: -1, lng: 0 },    // South
+      { lat: -1, lng: -1 },   // Southwest
+      { lat: 0, lng: -1 },    // West
+      { lat: 1, lng: -1 }     // Northwest
+    ];
+
+    for (const direction of directions) {
+      // Convert radius in meters to lat/lng offset (rough approximation)
+      const latOffset = (radius / 111000) * direction.lat; // ~111km per degree
+      const lngOffset = (radius / (111000 * Math.cos(position.lat * Math.PI / 180))) * direction.lng;
+      
+      const testPosition = {
+        lat: position.lat + latOffset,
+        lng: position.lng + lngOffset
+      };
+
+      try {
+        if (await isOnStreet(testPosition, directionsService)) {
+          const snappedPosition = await snapToStreet(testPosition, directionsService);
+          console.log(`Found street at ${radius}m radius:`, snappedPosition);
+          return snappedPosition;
+        }
+      } catch (error) {
+        // Continue searching if this position fails
+        continue;
+      }
+    }
+  }
+
+  console.warn('Could not find nearby street, using original position');
+  return position;
+};
+
+// Validate and fix spawn location to ensure it's on a street
+export const validateSpawnLocation = async (
+  position: { lat: number; lng: number },
+  directionsService?: google.maps.DirectionsService
+): Promise<{ lat: number; lng: number }> => {
+  // If no directions service available, return original position
+  if (!directionsService) {
+    console.warn('No directions service available for spawn validation');
+    return position;
+  }
+
+  try {
+    console.log('Validating spawn location:', position);
+    const streetPosition = await findNearestStreet(position, directionsService);
+    
+    if (streetPosition.lat !== position.lat || streetPosition.lng !== position.lng) {
+      const distance = calculateDistance(position, streetPosition);
+      console.log(`Moved spawn point ${distance.toFixed(0)}m to nearest street`);
+    }
+    
+    return streetPosition;
+  } catch (error) {
+    console.error('Error validating spawn location:', error);
+    return position; // Return original position if validation fails
+  }
 }; 

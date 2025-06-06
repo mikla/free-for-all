@@ -3,20 +3,27 @@ import styled from 'styled-components';
 
 const VersionInfo = styled.div`
   position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.6);
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
   color: #ccc;
-  padding: 8px 12px;
-  border-radius: 5px;
+  padding: 6px 10px;
+  border-radius: 6px;
   z-index: 1000;
-  font-size: 12px;
+  font-size: 10px;
   font-family: 'Courier New', monospace;
   border: 1px solid rgba(255, 255, 255, 0.1);
   
   &:hover {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.9);
     color: white;
+  }
+  
+  @media (max-width: 768px) {
+    bottom: 5px;
+    right: 5px;
+    padding: 4px 8px;
+    font-size: 9px;
   }
 `;
 
