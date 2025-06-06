@@ -7,6 +7,7 @@ import { useFightMode } from './hooks/useFightMode';
 import { useSpawnValidation } from './hooks/useSpawnValidation';
 import { useMobileControls } from './hooks/useMobileControls';
 import { validateSpawnLocation } from './utils/streetUtils';
+import { gameMapStyles, MapStyleTheme } from './utils/mapStyles';
 import { VersionDisplay } from './components/VersionDisplay';
 
 // Function to create character marker icon
@@ -406,6 +407,33 @@ const mapContainerStyle = {
   height: '100%'
 };
 
+// Style selector for map themes
+const StyleSelector = styled.select`
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  @media (max-width: 768px) {
+    top: 5px;
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+`;
+
 const App: React.FC = () => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
@@ -417,6 +445,7 @@ const App: React.FC = () => {
   const [rescueCooldown, setRescueCooldown] = useState(0);
   const [mobileBlockedNotification, setMobileBlockedNotification] = useState(false);
   const [blinkingPlayers, setBlinkingPlayers] = useState<Set<string>>(new Set());
+  const [mapTheme, setMapTheme] = useState<MapStyleTheme>('gta2');
   
   // Mobile controls
   const { handleMobileMovement, handleMobileAction } = useMobileControls({
@@ -531,6 +560,16 @@ const App: React.FC = () => {
           zoom={15}
           onLoad={onLoad}
           onUnmount={onUnmount}
+          options={{
+            styles: gameMapStyles[mapTheme],
+            disableDefaultUI: true,
+            zoomControl: true,
+            mapTypeControl: false,
+            scaleControl: false,
+            streetViewControl: false,
+            rotateControl: false,
+            fullscreenControl: false
+          }}
         >
           {isGoogleMapsLoaded && (
             <>
@@ -694,6 +733,18 @@ const App: React.FC = () => {
         <BlockedMovementNotification show={mobileBlockedNotification || showBlockedNotification}>
           🚫 Can't move there! Try a different direction.
         </BlockedMovementNotification>
+
+        {/* Map Style Selector */}
+        <StyleSelector 
+          value={mapTheme} 
+          onChange={(e) => setMapTheme(e.target.value as MapStyleTheme)}
+        >
+          <option value="gta2">🚗 GTA 2</option>
+          <option value="cyberpunk">🌆 Cyberpunk</option>
+          <option value="military">🎖️ Military</option>
+          <option value="retro">🕹️ Retro</option>
+          <option value="neon">💜 Neon</option>
+        </StyleSelector>
       </MapContainer>
     </LoadScript>
   );
