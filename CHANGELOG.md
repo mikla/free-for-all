@@ -171,11 +171,15 @@ All notable changes to this project will be documented in this file.
   - Optimized touch targets for mobile interaction
   - Made VersionDisplay component mobile-friendly
 - **Game-Like Map Themes**: Added multiple stylized Google Maps themes for immersive gameplay
-  - Created 4 distinct themes: Cyberpunk (dark blue/cyan), Military (grey/tactical), Retro (green/yellow), Neon (black/magenta)
+  - Created 5 distinct themes: GTA 2 (classic tan/dark), Cyberpunk (dark blue/cyan), Military (grey/tactical), Retro (green/yellow), Neon (black/magenta)
   - Real-time theme switching with dropdown selector at top of map
   - Disabled default Google Maps UI elements for cleaner game appearance
   - Custom color schemes for roads, water, buildings, and labels
   - Enhanced immersion with game-appropriate visual styling
+- **Car Emoji Characters**: Replaced all character emojis with car/vehicle emojis while keeping original names
+  - Original character names preserved: Space Marine, Scout, Eric Cartman, Kenny, etc.
+  - Visual representation now uses cars: 🏎️🚓🚒🚑🚕🚙🛻🚐🚌🏍️ and more
+  - Authentic GTA visual feel while maintaining character personalities and descriptions
 - **Mobile Touch Controls**: Added on-screen controls for mobile gameplay
   - Created `useMobileControls` hook for touch-based movement and actions
   - Added directional control buttons (↑ ← ↓ →) for movement

@@ -100,139 +100,139 @@ async function getSpawnLocation(socket: any): Promise<{ lat: number; lng: number
   return fallbackLocations[Math.floor(Math.random() * fallbackLocations.length)];
 }
 
-// Doom-inspired characters
+// Doom-inspired characters with car emojis
 const characters = [
   {
     id: 'marine',
     name: 'Space Marine',
-    emoji: '🪖',
+    emoji: '🏎️',
     color: '#4CAF50',
     description: 'Tough as nails marine'
   },
   {
     id: 'scout',
     name: 'Scout',
-    emoji: '🏃',
+    emoji: '🚓',
     color: '#2196F3',
     description: 'Fast and agile'
   },
   {
     id: 'heavy',
     name: 'Heavy Gunner',
-    emoji: '💪',
+    emoji: '🚒',
     color: '#FF5722',
     description: 'Strong and powerful'
   },
   {
     id: 'sniper',
     name: 'Sniper',
-    emoji: '🎯',
+    emoji: '🚑',
     color: '#9C27B0',
     description: 'Precise and deadly'
   },
   {
     id: 'medic',
     name: 'Combat Medic',
-    emoji: '⚕️',
-    color: '#4CAF50',
+    emoji: '🚕',
+    color: '#FFEB3B',
     description: 'Heals and fights'
   },
   {
     id: 'engineer',
     name: 'Engineer',
-    emoji: '🔧',
+    emoji: '🚙',
     color: '#FF9800',
     description: 'Builds and repairs'
   },
   {
     id: 'assassin',
     name: 'Assassin',
-    emoji: '🥷',
+    emoji: '🛻',
     color: '#424242',
     description: 'Silent but deadly'
   },
   {
     id: 'berserker',
     name: 'Berserker',
-    emoji: '😤',
+    emoji: '🚐',
     color: '#F44336',
     description: 'Rage-fueled warrior'
   },
   {
     id: 'cyborg',
     name: 'Cyborg',
-    emoji: '🤖',
+    emoji: '🚌',
     color: '#607D8B',
     description: 'Half machine, all deadly'
   },
   {
     id: 'demon_hunter',
     name: 'Demon Hunter',
-    emoji: '😈',
+    emoji: '🏍️',
     color: '#9C27B0',
     description: 'Specialized in demon slaying'
   },
-  // South Park Characters with Absurd Emojis
+  // South Park Characters with car emojis
   {
     id: 'cartman',
     name: 'Eric Cartman',
-    emoji: '🍔',
+    emoji: '🏁',
     color: '#FF6B35',
     description: 'Respects his authoritah!'
   },
   {
     id: 'kenny',
     name: 'Kenny McCormick',
-    emoji: '💀',
+    emoji: '🚗',
     color: '#FFA500',
     description: 'Oh my God, they killed Kenny!'
   },
   {
     id: 'stan',
     name: 'Stan Marsh',
-    emoji: '🤮',
+    emoji: '🚚',
     color: '#4169E1',
     description: 'This is pretty f***ed up right here'
   },
   {
     id: 'kyle',
     name: 'Kyle Broflovski',
-    emoji: '🧠',
+    emoji: '🚔',
     color: '#228B22',
     description: 'You bastards!'
   },
   {
     id: 'butters',
     name: 'Butters Stotch',
-    emoji: '🌻',
+    emoji: '🚜',
     color: '#FFD700',
     description: 'Oh hamburgers!'
   },
   {
     id: 'randy',
     name: 'Randy Marsh',
-    emoji: '🍺',
+    emoji: '🚛',
     color: '#8B4513',
     description: 'I thought this was America!'
   },
   {
     id: 'chef',
     name: 'Chef',
-    emoji: '🎵',
+    emoji: '🗑️',
     color: '#8B0000',
     description: 'Hello there children!'
   },
   {
     id: 'towelie',
     name: 'Towelie',
-    emoji: '🌿',
+    emoji: '🛵',
     color: '#90EE90',
     description: "Don't forget to bring a towel!"
   },
   {
     id: 'underpants_gnomes',
     name: 'Underpants Gnomes',
-    emoji: '👙',
+    emoji: '🚜',
     color: '#9370DB',
     description: 'Phase 1: Collect underpants'
   },
