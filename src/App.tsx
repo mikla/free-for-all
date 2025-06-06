@@ -25,23 +25,29 @@ const createCharacterMarkerIcon = (character: any, size: number = 40, isCurrentP
   canvas.width = size;
   canvas.height = size;
   
-  // Draw background circle - flash white if blinking
-  ctx.fillStyle = isBlinking ? '#ffffff' : (isCurrentPlayer ? '#2196F3' : character.color);
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
-  ctx.fill();
+  // Clear canvas with transparent background
+  ctx.clearRect(0, 0, size, size);
   
-  // Draw border - red if blinking
-  ctx.strokeStyle = isBlinking ? '#ff0000' : '#ffffff';
-  ctx.lineWidth = isBlinking ? 4 : 3;
-  ctx.stroke();
-  
-  // Draw character emoji
-  ctx.font = `${size * 0.5}px Arial`;
+  // Draw character emoji directly without background
+  ctx.font = `${size * 0.8}px Arial`; // Slightly larger since no border
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = isBlinking ? '#ff0000' : '#ffffff';
+  
+  if (isBlinking) {
+    // Add a subtle red glow effect for blinking
+    ctx.shadowColor = '#ff0000';
+    ctx.shadowBlur = 10;
+  }
+  
+  ctx.fillStyle = '#000000'; // Black outline for visibility
+  ctx.strokeText(character.emoji, size / 2, size / 2);
+  
+  ctx.fillStyle = isCurrentPlayer ? '#ffffff' : character.color; // White for current player, character color for others
   ctx.fillText(character.emoji, size / 2, size / 2);
+  
+  // Reset shadow
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
   
   return {
     url: canvas.toDataURL(),
