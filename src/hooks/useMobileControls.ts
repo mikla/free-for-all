@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useMultiplayer } from './useMultiplayer';
+import { useFightMode } from './useFightMode';
 import { validateMovement } from '../utils/streetUtils';
 
 interface MobileControlsProps {
@@ -9,6 +10,7 @@ interface MobileControlsProps {
 
 export const useMobileControls = ({ directionsService, showBlockedNotification }: MobileControlsProps) => {
   const { currentPlayer, updatePosition, shoot } = useMultiplayer();
+  const { nearbyPlayers, isInFightMode } = useFightMode();
 
   const movePlayer = useCallback(async (direction: { lat: number; lng: number }) => {
     if (!currentPlayer || !directionsService) return;
@@ -70,15 +72,22 @@ export const useMobileControls = ({ directionsService, showBlockedNotification }
   const handleMobileAction = useCallback((actionKey: string) => {
     switch (actionKey) {
       case 'attack':
-        // For now, we'll need to implement target selection for mobile
-        // This could be enhanced later to auto-target nearest enemy
-        console.log('Attack button pressed - need target selection for mobile');
+        if (isInFightMode && nearbyPlayers.length > 0 && currentPlayer && !currentPlayer.isDead) {
+          // Shoot at the closest player (same logic as spacebar attack)
+          const closestPlayer = nearbyPlayers[0];
+          if (closestPlayer && closestPlayer.health > 0) {
+            shoot(closestPlayer.id);
+            console.log(`Mobile attack: Shot fired at player ${closestPlayer.id}!`);
+          }
+        } else {
+          console.log('Mobile attack: No valid targets in range');
+        }
         break;
       // Could add more actions here in the future (e.g., special abilities)
       default:
         break;
     }
-  }, [shoot]);
+  }, [shoot, isInFightMode, nearbyPlayers, currentPlayer]);
 
   return {
     handleMobileMovement,

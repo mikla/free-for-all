@@ -2,10 +2,10 @@
 // Do not edit manually
 
 export const version = {
-  "commitHash": "50c7433",
+  "commitHash": "f8ae296",
   "branch": "main",
-  "buildTime": "2025-06-06T09:26:46.845Z",
-  "shortHash": "50c7433"
+  "buildTime": "2025-06-06T09:45:46.279Z",
+  "shortHash": "f8ae296"
 };
 
 export default version;

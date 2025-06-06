@@ -104,6 +104,13 @@ export const useMultiplayer = () => {
     // Handle player being shot
     socket.on('playerShot', (data: { shooterId: string; targetId: string; damage: number }) => {
       console.log('Player shot event:', data);
+      
+      // Trigger attack animation
+      const attackEvent = new CustomEvent('playerShotEvent', {
+        detail: { shooterId: data.shooterId, targetId: data.targetId }
+      });
+      window.dispatchEvent(attackEvent);
+      
       // Update target player's health
       setPlayers(prev => {
         const newPlayers = new Map(prev);

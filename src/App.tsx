@@ -10,7 +10,7 @@ import { validateSpawnLocation } from './utils/streetUtils';
 import { VersionDisplay } from './components/VersionDisplay';
 
 // Function to create character marker icon
-const createCharacterMarkerIcon = (character: any, size: number = 40, isCurrentPlayer: boolean = false): google.maps.Icon => {
+const createCharacterMarkerIcon = (character: any, size: number = 40, isCurrentPlayer: boolean = false, isBlinking: boolean = false): google.maps.Icon => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   
@@ -24,22 +24,22 @@ const createCharacterMarkerIcon = (character: any, size: number = 40, isCurrentP
   canvas.width = size;
   canvas.height = size;
   
-  // Draw background circle
-  ctx.fillStyle = isCurrentPlayer ? '#2196F3' : character.color;
+  // Draw background circle - flash white if blinking
+  ctx.fillStyle = isBlinking ? '#ffffff' : (isCurrentPlayer ? '#2196F3' : character.color);
   ctx.beginPath();
   ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
   ctx.fill();
   
-  // Draw border
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3;
+  // Draw border - red if blinking
+  ctx.strokeStyle = isBlinking ? '#ff0000' : '#ffffff';
+  ctx.lineWidth = isBlinking ? 4 : 3;
   ctx.stroke();
   
   // Draw character emoji
   ctx.font = `${size * 0.5}px Arial`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = isBlinking ? '#ff0000' : '#ffffff';
   ctx.fillText(character.emoji, size / 2, size / 2);
   
   return {
@@ -359,6 +359,23 @@ const ControlButton = styled.button`
     background: rgba(0, 0, 0, 0.9);
   }
   
+  &.attack-ready {
+    background: rgba(255, 69, 0, 0.8);
+    border-color: rgba(255, 69, 0, 1);
+    animation: pulse 1s infinite;
+  }
+  
+  &.attack-ready:active {
+    background: rgba(255, 0, 0, 0.9);
+    border-color: rgba(255, 0, 0, 1);
+  }
+  
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 69, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0); }
+  }
+  
   @media (max-width: 480px) {
     width: 45px;
     height: 45px;
@@ -399,6 +416,7 @@ const App: React.FC = () => {
   const { isValidatingSpawn } = useSpawnValidation(directionsService, currentPlayer, updatePosition);
   const [rescueCooldown, setRescueCooldown] = useState(0);
   const [mobileBlockedNotification, setMobileBlockedNotification] = useState(false);
+  const [blinkingPlayers, setBlinkingPlayers] = useState<Set<string>>(new Set());
   
   // Mobile controls
   const { handleMobileMovement, handleMobileAction } = useMobileControls({
@@ -463,6 +481,31 @@ const App: React.FC = () => {
     }
   }, [currentPlayer, directionsService, updatePosition, rescueCooldown]);
 
+  // Listen for attack events to trigger blink effect
+  useEffect(() => {
+    const handlePlayerShot = (event: CustomEvent) => {
+      const { targetId } = event.detail;
+      
+      // Make the target player blink
+      setBlinkingPlayers(prev => new Set([...prev, targetId]));
+      
+      // Remove blink effect after 300ms
+      setTimeout(() => {
+        setBlinkingPlayers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(targetId);
+          return newSet;
+        });
+      }, 300);
+    };
+
+    window.addEventListener('playerShotEvent' as any, handlePlayerShot);
+    
+    return () => {
+      window.removeEventListener('playerShotEvent' as any, handlePlayerShot);
+    };
+  }, []);
+
   if (currentPlayer) {
     console.log('Rendering currentPlayer marker at:', currentPlayer.position);
     const myPlayer = players.get(currentPlayer.id);
@@ -513,7 +556,7 @@ const App: React.FC = () => {
                     key={currentPlayer.id}
                     position={currentPlayer.position}
                     title={`You (${currentPlayer.character.name})`}
-                    icon={createCharacterMarkerIcon(currentPlayer.character, 40, true)}
+                    icon={createCharacterMarkerIcon(currentPlayer.character, 40, true, blinkingPlayers.has(currentPlayer.id))}
                   />
                   <Circle
                     center={currentPlayer.position}
@@ -536,7 +579,7 @@ const App: React.FC = () => {
                     key={player.id}
                     position={player.position}
                     title={`${player.character.name} (${player.health} HP, ${player.kills} kills)`}
-                    icon={createCharacterMarkerIcon(player.character, 36, false)}
+                    icon={createCharacterMarkerIcon(player.character, 36, false, blinkingPlayers.has(player.id))}
                   />
               ))}
             </>
@@ -637,7 +680,13 @@ const App: React.FC = () => {
             <ControlButton onClick={() => handleMobileMovement('right')}>→</ControlButton>
           </ControlRow>
           <ControlCenter>
-            <ControlButton onClick={() => handleMobileAction('attack')} title="Attack">⚔️</ControlButton>
+            <ControlButton 
+              onClick={() => handleMobileAction('attack')} 
+              title="Attack"
+              className={isInFightMode && nearbyPlayers.length > 0 ? 'attack-ready' : ''}
+            >
+              ⚔️
+            </ControlButton>
           </ControlCenter>
         </MobileControlsOverlay>
 

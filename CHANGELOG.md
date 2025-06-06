@@ -178,6 +178,12 @@ All notable changes to this project will be documented in this file.
   - Integrated with existing street validation and movement system
   - Responsive button sizes with proper touch targets
   - Visual feedback on button press with scale animation
+- **Attack Visual Feedback**: Added simple and clean attack indication
+  - Players flash white with red border when attacked
+  - Blink effect lasts 300ms for clear but non-intrusive feedback
+  - Integrated with both keyboard (spacebar) and mobile (⚔️ button) attacks
+  - Mobile attack button pulses and changes color when enemies are in range
+  - Clean visual indication without leaving marks on the map
 - Improved street movement validation system with better error handling
 - Added spawn location debugging and logging
 
