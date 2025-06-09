@@ -34,10 +34,9 @@ A 2D multiplayer game inspired by GTA 2, where players can roam the streets and 
 ## Project Structure
 
 ```
-├── client/             # Frontend React application
+├── src/                # Frontend React application
 ├── server/             # Backend Node.js server
-├── shared/             # Shared types and utilities
-└── docs/              # Documentation
+
 ```
 
 ## Development Status
